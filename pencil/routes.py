@@ -289,19 +289,23 @@ def modify_post():
 @login_required
 def delete_page():
     # Canceling blog
+    current_user.id = get_jwt_identity()
     post_id = request.args.get("post_id")
     if post_id:
         post_to_delete = Post.query.filter_by(id=post_id).first()
         if not post_to_delete:
-            flash(f"The blog not found", category="danger")
+            return jsonify({"message": "The blog was not found."}), 404
+            #flash(f"The blog not found", category="danger")
         elif current_user.id != post_to_delete.owner:
-            flash(f"You do not heve permission to delete this blog", category="danger")
-            return redirect(url_for("home_page"))
+            return jsonify({"message": "You do not have permission to delete this blog."}), 403
+            #flash(f"You do not heve permission to delete this blog", category="danger")
+            #return redirect(url_for("home_page"))
         else:
             db.session.delete(post_to_delete)
             db.session.commit()
             flash(f"The blog has been removed successfully", category="success")
-    return redirect(url_for("home_page"))
+    return jsonify({"message": "Post ID is required."}), 400
+    #return redirect(url_for("home_page"))
 
 @app.route("/delete-comment", methods=["POST", "GET"])
 @login_required
@@ -339,7 +343,7 @@ def delete_reply():
 @cross_origin()
 def profile():
 
-    profile_id =  request.args.get("profile_id")
+    profile_id = request.args.get("profile_id")
     current_user.id = get_jwt_identity()
     if profile_id:
     # Fetch the profile associated with the user
@@ -362,45 +366,49 @@ def profile():
 def edit_profile():
     profile_form = ProfileForm()
 
+    profile_id = request.args.get("profile_id")
     current_user.id = get_jwt_identity()
-    # Fetch the current user's profile if it exists
-    profile_to_update = Profile.query.filter_by(users_profile=current_user.id).first()
-    if profile_to_update:
-        print("Profile retrieved:", profile_to_update)  # Debugging print
-        profile_form = ProfileForm(obj=profile_to_update)
-        print(request.method)
-        if request.method == "POST":
-            print("POST request received")
-            if profile_form.name.data:
-            #if profile_form.validate_on_submit():  # Ensure the form is valid
-                if 'picture' in request.files:
-                    file = request.files['picture']
-                    if file.filename != '':
-                        filename = secure_filename(file.filename)
-                        file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))  # Save the file
-                        original_filename, extension = os.path.splitext(file.filename)
-                        profile_to_update.profile_picture = f"{original_filename}{extension}"
-                        # db.session.commit()
-                if profile_to_update:
-                    # Update existing profile
-                    profile_to_update.name = profile_form.name.data
-                    profile_to_update.username = profile_form.username.data
-                    profile_to_update.bio = profile_form.bio.data
-                    profile_to_update.gmail_links = profile_form.gmail_links.data
-                    profile_to_update.facebook_links = profile_form.facebook_links.data
-                    profile_to_update.instagram_links = profile_form.instagram_links.data
-                    profile_to_update.x_links = profile_form.x_links.data
-                    profile_to_update.linkedin_links = profile_form.linkedin_links.data
-                    profile_to_update.github_links = profile_form.github_links.data
+    if profile_id:
+        # Fetch the current user's profile if it exists
+        profile_to_update = Profile.query.filter_by(id=profile_id, users_profile=current_user.id).first()
+        if not profile_to_update:
+            print("Profile retrieved:", profile_id)  # Debugging print
+            return jsonify({"message": "Blog not found", "category": "danger"}), 401
+
+    profile_form = ProfileForm(obj=profile_to_update)
+    print(request.method)
+    if request.method == "POST":
+        print("POST request received")
+        if profile_form.name.data:
+        #if profile_form.validate_on_submit():  # Ensure the form is valid
+            if 'picture' in request.files:
+                file = request.files['picture']
+                if file.filename != '':
+                    filename = secure_filename(file.filename)
+                    file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))  # Save the file
+                    original_filename, extension = os.path.splitext(file.filename)
+                    profile_to_update.profile_picture = f"{original_filename}{extension}"
                     db.session.commit()
-                    return jsonify({"message": "The profile has been updated successfully.", "profile_to_update": profile_to_update.id, "category": "success"}), 200
-                    #flash("Your profile was updated successfully", category="success")
-                    #return redirect(url_for("profile"))
+            if profile_to_update:
+                # Update existing profile
+                profile_to_update.name = profile_form.name.data
+                profile_to_update.username = profile_form.username.data
+                profile_to_update.bio = profile_form.bio.data
+                profile_to_update.gmail_links = profile_form.gmail.data
+                profile_to_update.facebook_links = profile_form.facebook.data
+                profile_to_update.instagram_links = profile_form.instagram.data
+                profile_to_update.x_links = profile_form.x.data
+                profile_to_update.linkedin_links = profile_form.linkedin.data
+                profile_to_update.github_links = profile_form.github.data
+                db.session.commit()
+                profile = profile_to_update.to_dict()
+                return jsonify({"message": "The profile has been updated successfully.", "profile": profile, "category": "success"}), 200
+                #flash("Your profile was updated successfully", category="success")
+                #return redirect(url_for("profile"))
         # Handle validation errors
         for error_message in profile_form.errors.values():
             flash(f"There was an error updating your profile: {error_message}", category="danger")
             return jsonify(errors=profile_form.errors), 400
-
     return jsonify({"profile": profile_to_update.to_dict()}), 200
     #return render_template("modify_profile.html", form=profile_form, profile_to_update=profile_to_update)
 
@@ -459,19 +467,13 @@ def register_page():
 def login_page():
     form = LoginForm()
     print("Form data:", form.username.data, form.password.data)
-    # data = request.get_json()
-    # username = data.get('username')
-    # password = data.get('password')
     #if form.validate_on_submit():
     attempted_user = User.query.filter_by(username=form.username.data).first()
     if attempted_user and attempted_user.check_password_correction(attempted_password=form.password.data):
         login_user(attempted_user)
         access_token = create_access_token(identity=attempted_user.id)
 
-        return jsonify({
-                "message": "Success! You are logged in.",
-                "access_token": access_token
-            }), 200
+        return jsonify({"message": "Success! You are logged in.", "access_token": access_token}), 200
         #flash(f"Success! You are logged in as: {attempted_user.username}", category="success")
         #return redirect(url_for("home_page"))
     else:
