@@ -1,7 +1,10 @@
 import React, { useState, useContext } from "react";
 import axios from "axios";
 import Context from '../components/Context'; // Adjust the path as necessary
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import logo from "../assets/images/logo.png";
+import Footer from "../components/Footer/Footer";
+
 
 const LoginPage = () => {
   const [username, setUsername] = useState("");
@@ -31,8 +34,6 @@ const LoginPage = () => {
         //console.log(response.data);
         const token = response.data.access_token;
         const userId = response.data.user_id;
-        console.log("ffffffffffffffffffffffffffffff");
-        console.log("ffffffffffffffffffffffffffffff",token);
         setToken(token);
         localStorage.setItem("authToken", token);
         setUserData({ id: userId, token }); // Set user data in context
@@ -47,9 +48,9 @@ const LoginPage = () => {
   };
 
   return (
-    <div className="text-center">
-      <div className="container">
-        <form>
+    <>
+      <div className="container d-flex justify-content-center text-center">
+        <form className="form-container">
           <img
             className="mb-4"
             src="https://res.cloudinary.com/jimshapedcoding/image/upload/v1597332609/android-icon-192x192_ove2a7.png"
@@ -101,87 +102,18 @@ const LoginPage = () => {
               Log In
             </button>
             <p className="small fw-bold mt-2 pt-1 mb-0">
-              Don't have an account?{" "}
-              <a href="/register" className="link-danger">
+              Don't have an account?
+              <Link to={"/register"} className="link-danger">
                 Register
-              </a>
+              </Link>
             </p>
           </div>
         </form>
         {message && <div className="alert mt-3">{message}</div>}
         <br />
       </div>
-      <footer className="footer">
-        <svg
-          className="footer-border"
-          height="214"
-          viewBox="0 0 2204 214"
-          fill="none"
-          xmlns="http://www.w3.org/2000/svg"
-        >
-          <path
-            d="M2203 213C2136.58 157.994 1942.77 -33.1996 1633.1 53.0486C1414.13 114.038 1200.92 188.208 967.765 118.127C820.12 73.7483 263.977 -143.754 0.999958 158.899"
-            strokeWidth="2"
-          />
-        </svg>
-        <div className="container">
-          <div className="row align-items-center">
-            <div className="col-md-5 text-center text-md-left mb-4">
-              <ul className="list-inline footer-list mb-0">
-                <li className="list-inline-item">
-                  <a href="privacy-policy.html">Privacy Policy</a>
-                </li>
-                <li className="list-inline-item">
-                  <a href="terms-conditions.html">Terms Conditions</a>
-                </li>
-              </ul>
-            </div>
-            <div className="col-md-2 text-center mb-4">
-              <a href="index.html">
-                <img
-                  className="img-fluid"
-                  width="100px"
-                  src="static/images/logo.png"
-                  alt="Reader | Hugo Personal Blog Template"
-                />
-              </a>
-            </div>
-            <div className="col-md-5 text-md-right text-center mb-4">
-              <ul className="list-inline footer-list mb-0">
-                <li className="list-inline-item">
-                  <a href="#">
-                    <i className="ti-facebook"></i>
-                  </a>
-                </li>
-                <li className="list-inline-item">
-                  <a href="#">
-                    <i className="ti-twitter-alt"></i>
-                  </a>
-                </li>
-                <li className="list-inline-item">
-                  <a href="#">
-                    <i className="ti-linkedin"></i>
-                  </a>
-                </li>
-                <li className="list-inline-item">
-                  <a href="#">
-                    <i className="ti-github"></i>
-                  </a>
-                </li>
-                <li className="list-inline-item">
-                  <a href="#">
-                    <i className="ti-youtube"></i>
-                  </a>
-                </li>
-              </ul>
-            </div>
-            <div className="col-12">
-              <div className="border-bottom border-default"></div>
-            </div>
-          </div>
-        </div>
-      </footer>
-    </div>
+      <Footer />
+    </>
   );
 };
 
