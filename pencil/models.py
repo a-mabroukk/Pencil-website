@@ -74,7 +74,7 @@ class Post(BaseModel):
     modification_date = db.Column(db.DateTime, default=datetime.utcnow())
     owner = db.Column(db.Integer(), db.ForeignKey("user.id"))
     profile_owner = db.Column(db.Integer(), db.ForeignKey("profile.id"))
-    saved_posts = db.relationship("SavedBlog", back_populates="blogs")
+    saved_posts = db.relationship("SavedBlog", back_populates="blogs", cascade="all, delete-orphan")
     post_comments = db.relationship("Comment", backref="owned_comments", lazy=True)
 
     def __repr__(self):

@@ -98,8 +98,9 @@ def blog_page():
         if requested_blog:
             if request.method == "POST":
                 data = request.get_json()
+                save = data.get('save', False)
                 print("POST request received")
-                if 'save' in request.form:
+                if save == True:
                     #if data.get("action") == "save":
                     print("Save button clicked")
                     #if requested_blog in current_user.archives:
@@ -237,33 +238,40 @@ def modify_comment():
 
 
 @app.route("/edit-reply-on-comment", methods=["POST", "GET"])
-@login_required
+#@login_required
+@jwt_required()
+@cross_origin()
 def update_reply():
     # Fetch the comment ID from request arguments
     reply_to_modify = request.args.get("reply_to_modify")
-    if reply_to_modify is not None:
+    current_user.id = get_jwt_identity()
+    if reply_to_modify:
         replies = ReplyComment.query.filter_by(id=reply_to_modify).first()
         # Check if the comment exists
         if replies is None:
-            flash("Comment not found. Please try again.", category="danger")
-            return redirect(url_for("blog_page"))
-
+            return jsonify({"message": "The comment was not found.", "category": "danger"}), 404
+            #flash("Comment not found. Please try again.", category="danger")
+            #return redirect(url_for("blog_page"))
+        if current_user.id != replies.responder:
+            return jsonify({"message": "You do not have permission to modify this blog.", "category": "danger"}), 401
     # Initialize form with existing comment data
     form = ReplyForm(obj=replies)
 
     if request.method == "POST":
-        if form.validate_on_submit():  # Ensure the form is valid
+        if form.reply.data:  # Ensure the form is valid
             # Update comment data
             replies.text = form.reply.data
             replies.modification_date = datetime.now()
             db.session.commit()
-            flash("The comment has been updated successfully.", category='success')
-            return redirect(url_for("blog_page", reply_to_modify=replies.reply_comment))
+            return jsonify({"message": "Your comment updated successfully.", "reply_to_modify": replies.reply_comment, "category": "success"}), 200
+            #flash("The comment has been updated successfully.", category='success')
+            #return redirect(url_for("blog_page", reply_to_modify=replies.reply_comment))
         else:
-            return render_template("edit_reply_to_comment.html", form=form, replies=replies)
-
+            return jsonify({"message": "Form validation failed", "errors": form.errors}), 400
+            #return render_template("edit_reply_to_comment.html", form=form, replies=replies)
+    return jsonify({"replies": replies.to_dict()}), 200
     # Render the template whether or not the comment was found
-    return render_template("edit_reply_to_comment.html", form=form, replies=replies)
+    #return render_template("edit_reply_to_comment.html", form=form, replies=replies)
 
 @app.route("/modify", methods=["POST", "GET"])
 #@login_required
@@ -359,19 +367,27 @@ def delete_comment():
     #return redirect(url_for("blog_page", post_id=comment_to_delete.comments_on_post))
 
 @app.route("/delete-reply-comment", methods=["POST", "GET"])
-@login_required
+#@login_required
+@jwt_required()  # This decorator verifies the JWT and provides the user's identity
+@cross_origin()
 def delete_reply():
     reply_id = request.args.get("reply_id")
     if reply_id:
         reply_to_delete = ReplyComment.query.filter_by(id=reply_id).first()
         if not reply_to_delete:
-            flash("The comment is no longer available.", category="danger")
-            return redirect(url_for("home_page"))
-
+            return jsonify({"message": "The comment is no longer available", "category": "danger"}), 404
+            #flash("The comment is no longer available.", category="danger")
+            #return redirect(url_for("home_page"))
         db.session.delete(reply_to_delete)
         db.session.commit()
-        flash(f"The comment has been removed successfully", category="success")
-    return redirect(url_for("blog_page", post_id=reply_to_delete.comments_on_post))
+        return jsonify({"message": "Reply comment deleted successfully.", "post_id": reply_to_delete.reply_comment, "category": "success"}), 200
+        #flash(f"The comment has been removed successfully", category="success")
+    return jsonify({"message": "Reply comment ID is missing", "post_id": None}), 400  # Return an error if no reply_id was provided
+    #return redirect(url_for("home_page"))
+
+#@app.route("/delete-reply-reply", methods=["POST", "GET"])
+#@login_required
+    #return redirect(url_for("blog_page", post_id=reply_to_delete.comments_on_post))
 
 @app.route("/profile", methods=["GET"])
 #@login_required
@@ -383,7 +399,7 @@ def profile():
     current_user.id = get_jwt_identity()
     if profile_id:
     # Fetch the profile associated with the user
-        profile_to_display = Profile.query.filter_by(users_profile=profile_id).first()
+        profile_to_display = Profile.query.filter_by(id=profile_id).first()
         if profile_to_display:
             profile = profile_to_display.to_dict()
             return jsonify({"profile": profile, "category": "success"}), 200
@@ -394,6 +410,17 @@ def profile():
         #return redirect(url_for("home_page"))
     return jsonify({"message": "No profile with this name", "category": "danger"}), 200
     #return redirect(url_for("home_page"))
+
+@app.route("/my-profile", methods=["GET"])
+@jwt_required()
+@cross_origin()
+def my_profile():
+    current_user.id = get_jwt_identity()
+    my_profile = Profile.query.filter_by(users_profile=current_user.id).first()
+    if my_profile:
+        profile = my_profile.to_dict()
+        return jsonify({"profile": profile, "category": "success"}), 200
+    return jsonify({"profile": profile, "category": "success"}), 200
 
 @app.route("/update-profile", methods=["POST", "GET"])
 #@login_required
