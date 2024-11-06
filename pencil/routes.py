@@ -2,10 +2,9 @@ from pencil import app, db, login_manager
 from flask_cors import CORS
 from flask import render_template, redirect, url_for, flash, request, abort, jsonify
 from werkzeug.utils import secure_filename
-from pencil.models import Post, User, Comment, ReplyComment, ChildReply, Profile, Role, load_user
+from pencil.models import Post, User, SavedBlog, Comment, ReplyComment, ChildReply, Profile, load_user
 from pencil.forms import RegisterForm, LoginForm, PostForm, SearchForm, CommentForm, ReplyForm, ProfileForm, ReplyReplyForm
 from sqlalchemy.orm import joinedload
-#from pencil.member_role import create_role_member
 from flask_login import login_user, logout_user, login_required, current_user
 from datetime import datetime
 import os
@@ -29,14 +28,10 @@ def home_page():
             flash("No results found", category="info")
             return jsonify("No results found"), 200
             # return redireact(url_for("home_page", search_results=[]))  # Redirect with empty results
-
         search_result = [res.to_dict() for res in search_results]
-
         #search_result = []
         #for res in search_results:
             #search_result.append(res.to_dict())
-
-
         return jsonify(search_result)
     posts = Post.query.order_by(Post.title.desc()).limit(20).all()
     #for post in posts:
@@ -58,10 +53,19 @@ def posting_page():
         print("POST request received",post_form.title.data)
         if post_form.title.data:
             try:
-                print("Form data:", post_form.title.data, post_form.content.data)
+                print("Form data:", post_form.title.data, post_form.content.data, post_form.image.data)
                 post_to_create = Post(title=post_form.title.data,
                                     content=post_form.content.data,
                                     owner=user_id)
+                if 'image' in request.files:
+                    file = request.files['image']
+                    if file.filename != '':
+                        filename = secure_filename(file.filename)
+                        file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))  # Save the file
+                        original_filename, extension = os.path.splitext(file.filename)
+                        post_to_create.post_image = f"{original_filename}{extension}"
+                        db.session.commit()
+                        print("Profile picture updated in database:", post_to_create.post_image)  # Debug: log updated picture URL
                 db.session.add(post_to_create)
                 db.session.commit()
                 return jsonify({"message": "The blog has been saved successfully", "category": "success", "post_id":  post_to_create.id}), 201
@@ -96,17 +100,22 @@ def blog_page():
                 data = request.get_json()
                 print("POST request received")
                 if 'save' in request.form:
+                    #if data.get("action") == "save":
                     print("Save button clicked")
-                    if requested_blog in current_user.archives:
+                    #if requested_blog in current_user.archives:
+                    saved_blog = SavedBlog.query.filter_by(user_id=user_id, post_id=requested_blog.id).first()
+                    if saved_blog:
                         return jsonify({"message": "Blog is already saved", "category": "info"}), 200
                         #flash("Blog is already saved.", category="info")
                     else:
-                        current_user.archives.append(requested_blog)
+                        new_saved_blog = SavedBlog(user_id=user_id, post_id=requested_blog.id)
+                        db.session.add(new_saved_blog)
                         db.session.commit()
-                        return jsonify({"message": "Blog saved successfully"}, category="success"), 200
+                        return jsonify({"message": "Blog saved successfully", "category": "success"}), 200
+                        #current_user.archives.append(requested_blog)
+                        #db.session.commit()
                         #flash(f"The blog is has been saved successfully", category="success")
                         #return redirect(url_for("save_page"))
-
                 if comment_form.comment.data:
                     print("Comment form data:", comment_form.comment.data)
                     comment_to_post = Comment(text=comment_form.comment.data,
@@ -167,7 +176,7 @@ def blog_page():
                         comment_data["replies"].append(reply_data)
 
                     comments_response.append(comment_data)
-                return jsonify({"post": {"id": requested_blog.id, "title": requested_blog.title, "content": requested_blog.content,
+                return jsonify({"post": {"id": requested_blog.id, "post_image": requested_blog.post_image, "title": requested_blog.title, "content": requested_blog.content,
                                         "publication_date": requested_blog.publication_date}, "comments": comments_response}), 200
                 #return render_template("blog.html", post_id=requested_blog, comment_form=comment_form,
                                         #posted_comments=comment_with_replies, reply_form=reply_form, replies_reply_form=replies_reply_form)
@@ -180,41 +189,51 @@ def blog_page():
         return jsonify(errors=reply_form.errors), 400
     return redirect(url_for("home_page"))
 
-@app.route("/saved", methods=["GET", "POST"])
-@login_required
+@app.route("/saved-items", methods=["GET"])
+#@login_required
+@jwt_required()
+@cross_origin()
 def save_page():
-    items = current_user.archives
-    return render_template("saved_items.html", items=items)
+    #items = current_user.archives
+    current_user.id = get_jwt_identity()
+    items = (db.session.query(Post).join(SavedBlog, SavedBlog.post_id == Post.id)
+            .filter(SavedBlog.user_id == current_user.id).all())
+    saved_posts = [item.to_dict() for item in items]
+    return jsonify(saved_posts)
+    #return render_template("saved_items.html", items=items)
 
 @app.route("/modify-comment", methods=["POST", "GET"])
-@login_required
+@jwt_required()
 def modify_comment():
     # Fetch the comment ID from request arguments
     comment_to_modify = request.args.get("comment_to_modify")
+    current_user.id = get_jwt_identity()  # Store user ID in a variable
+
     if comment_to_modify is not None:
-        commnts = Comment.query.filter_by(id=comment_to_modify).first()
+        commnts = Comment.query.filter_by(id=comment_to_modify, comment_owner=current_user.id).first()
         print("Comment retrieved:", commnts)  # Debugging print
+
         # Check if the comment exists
         if commnts is None:
-            flash("Comment not found. Please try again.", category="danger")
-            return redirect(url_for("blog_page"))
+            return jsonify({"message": "The comment was not found.", "category": "danger"}), 404
 
-    # Initialize form with existing comment data
-    form = CommentForm(obj=commnts)
+    # Handle GET request to fetch existing comment data
+    if request.method == "GET":
+        if commnts is not None:
+            return jsonify({"text": commnts.text}), 200  # Return existing comment text for editing
 
+    # Handle POST request to update the comment
     if request.method == "POST":
-        if form.validate_on_submit():  # Ensure the form is valid
-            # Update comment data
-            commnts.text = form.comment.data
-            commnts.modification_date = datetime.now()
-            db.session.commit()
-            flash("The comment has been updated successfully.", category='success')
-            return redirect(url_for("blog_page", comment_to_modify=commnts.comments_on_post))
+        data = request.json  # Get JSON data from the request
+        if data and 'text' in data:  # Ensure the JSON data has the 'text' field
+            commnts.text = data['text']  # Update the comment text
+            commnts.modification_date = datetime.now()  # Update modification date
+            db.session.commit()  # Commit changes to the database
+            return jsonify({"message": "The comment has been updated successfully", "comment_to_modify": commnts.comments_on_post, "category": "success"}), 200
         else:
-            return render_template("modify_comments.html", form=form, commnts=commnts)
+            return jsonify({"errors": "Invalid data."}), 400  # Return error if data is invalid
 
-    # Render the template whether or not the comment was found
-    return render_template("modify_comments.html", form=form, commnts=commnts)
+    return jsonify({"commnts": commnts}), 200  # Default response, should not typically reach here for GET/POST
 
 
 @app.route("/edit-reply-on-comment", methods=["POST", "GET"])
@@ -270,6 +289,15 @@ def modify_post():
         if form.title.data:
         #if form.validate_on_submit(): # Ensure the form is valid
         # Update specific blog if it exists
+            if 'image' in request.files:
+                file = request.files['image']
+                if file.filename != '':
+                    filename = secure_filename(file.filename)
+                    file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))  # Save the file
+                    original_filename, extension = os.path.splitext(file.filename)
+                    post.post_image = f"{original_filename}{extension}"
+                    db.session.commit()
+                    print("Profile picture updated in database:", post.post_image)  # Debug: log updated picture URL
             post.title = form.title.data
             post.content = form.content.data
             modification_date = datetime.now()
@@ -282,17 +310,19 @@ def modify_post():
             # Render the form again with errors
             return jsonify({"message": "Form validation failed", "errors": form.errors}), 400
             #return render_template("modify.html", form=form, post=post)
-    return jsonify({"title": post.title, "content": post.content, "publication_date": post.publication_date}), 200
+    return jsonify({"post_image": post.post_image, "title": post.title, "content": post.content, "publication_date": post.publication_date}), 200
     #return render_template("modify.html", form=form, post=post)
 
 @app.route("/delete", methods=["POST", "GET"])
-@login_required
+#@login_required
+@jwt_required()  # This decorator verifies the JWT and provides the user's identity
+@cross_origin()
 def delete_page():
     # Canceling blog
-    current_user.id = get_jwt_identity()
     post_id = request.args.get("post_id")
+    current_user.id = get_jwt_identity()
     if post_id:
-        post_to_delete = Post.query.filter_by(id=post_id).first()
+        post_to_delete = Post.query.filter_by(id=post_id, owner=current_user.id).first()
         if not post_to_delete:
             return jsonify({"message": "The blog was not found."}), 404
             #flash(f"The blog not found", category="danger")
@@ -304,23 +334,29 @@ def delete_page():
             db.session.delete(post_to_delete)
             db.session.commit()
             flash(f"The blog has been removed successfully", category="success")
+            return jsonify({"message": "Blog deleted successfully."}), 200
     return jsonify({"message": "Post ID is required."}), 400
     #return redirect(url_for("home_page"))
 
 @app.route("/delete-comment", methods=["POST", "GET"])
-@login_required
+#@login_required
+@jwt_required()  # This decorator verifies the JWT and provides the user's identity
+@cross_origin()
 def delete_comment():
     comment_id = request.args.get("comment_id")
+    current_user.id = get_jwt_identity()
     if comment_id:
-        comment_to_delete = Comment.query.filter_by(id=comment_id).first()
+        comment_to_delete = Comment.query.filter_by(id=comment_id, comment_owner=current_user.id).first()
         if not comment_to_delete:
-            flash("The comment is no longer available.", category="danger")
-            return redirect(url_for("home_page"))
-
+            return jsonify({"message": "The comment is no longer available", "category": "danger"}), 404
+            #flash("The comment is no longer available.", category="danger")
+            #return redirect(url_for("home_page"))
         db.session.delete(comment_to_delete)
         db.session.commit()
-        flash(f"The comment has been removed successfully", category="success")
-    return redirect(url_for("blog_page", post_id=comment_to_delete.comments_on_post))
+        return jsonify({"message": "Comment deleted successfully.", "post_id": comment_to_delete.comments_on_post, "category": "success"}), 200
+        #flash(f"The comment has been removed successfully", category="success")
+    return jsonify({"message": "Comment ID is missing", "post_id": None}), 400  # Return an error if no comment_id was provided
+    #return redirect(url_for("blog_page", post_id=comment_to_delete.comments_on_post))
 
 @app.route("/delete-reply-comment", methods=["POST", "GET"])
 @login_required
@@ -365,17 +401,18 @@ def profile():
 @cross_origin()
 def edit_profile():
     profile_form = ProfileForm()
+    upload_result = None
 
     profile_id = request.args.get("profile_id")
     current_user.id = get_jwt_identity()
     if profile_id:
         # Fetch the current user's profile if it exists
         profile_to_update = Profile.query.filter_by(id=profile_id, users_profile=current_user.id).first()
+        profile_form = ProfileForm(obj=profile_to_update)
         if not profile_to_update:
             print("Profile retrieved:", profile_id)  # Debugging print
             return jsonify({"message": "Blog not found", "category": "danger"}), 401
 
-    profile_form = ProfileForm(obj=profile_to_update)
     print(request.method)
     if request.method == "POST":
         print("POST request received")
@@ -389,6 +426,7 @@ def edit_profile():
                     original_filename, extension = os.path.splitext(file.filename)
                     profile_to_update.profile_picture = f"{original_filename}{extension}"
                     db.session.commit()
+                    print("Profile picture updated in database:", profile_to_update.profile_picture)  # Debug: log updated picture URL
             if profile_to_update:
                 # Update existing profile
                 profile_to_update.name = profile_form.name.data
