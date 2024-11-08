@@ -8,13 +8,13 @@ const EditProfile = () => {
     name: "",
     username: "",
     bio: "",
-    gmail_links: "",
-    facebook_links: "",
-    instagram_links: "",
-    x_links: "",
-    linkedin_links: "",
-    github_links: "",
-    picture: null,
+    gmail: "",
+    facebook: "",
+    instagram: "",
+    x: "",
+    linkedin: "",
+    github: "",
+    picture: [],
   });
   const [errors, setErrors] = useState({});
   const [token, setToken] = useState(null);
@@ -33,22 +33,19 @@ const EditProfile = () => {
     const fetchProfile = async () => {
       try {
         const response = await axios.get(
-          `http://127.0.0.1:5000/update-profile?profile_id=${profileId}`,
+          `http://127.0.0.1:5000/profile?profile_id=${profileId}`,
           {
             headers: { Authorization: `Bearer ${token}` },
           }
         );
         setProfile(response.data.profile);
-        // console.log("Profile ID:", profileId);
       } catch (error) {
         if (error.response && error.response.status === 401) {
-          console.error("Error fetching profile:", error);
           navigate("/login");
         } else {
           setFlashMessage({
             type: "danger",
-            message:
-              "Profile not found or you do not have permission to modify.",
+            message: "Profile not found or you do not have permission to modify.",
           });
           navigate("/home");
         }
@@ -62,29 +59,72 @@ const EditProfile = () => {
 
   const handleChange = (e) => {
     const { name, value, files } = e.target;
-    setProfile((prev) => ({
-      ...prev,
-      [name]: files ? files[0] : value,
-    }));
+
+    if (files) {
+      const imagesArray = [];
+      for (let i = 0; i < files.length; i++) {
+        if (fileValidate(files[i])) {
+          imagesArray.push(files[i]);
+        }
+      }
+      setProfile((prevProfile) => ({
+        ...prevProfile,
+        picture: imagesArray,
+      }));
+    } else {
+      setProfile((prevProfile) => ({
+        ...prevProfile,
+        [name]: value,
+      }));
+    }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    const data = new FormData();
+    
+    // Append files and other profile data
+    profile.picture.forEach((file) => {
+      data.append("picture", file);
+    });
+    data.append("name", profile.name);
+    data.append("username", profile.username);
+    data.append("bio", profile.bio);
+    data.append("gmail", profile.gmail);
+    data.append("facebook", profile.facebook);
+    data.append("instagram", profile.instagram);
+    data.append("x", profile.x);
+    data.append("linkedin", profile.linkedin);
+    data.append("github", profile.github);
+
+    console.log("Submitting profile data:", {
+      name: profile.name,
+      username: profile.username,
+      bio: profile.bio,
+      gmail: profile.gmail,
+      facebook: profile.facebook,
+      instagram: profile.instagram,
+      x: profile.x,
+      linkedin: profile.linkedin,
+      github: profile.github,
+      pictures: profile.picture.map((file) => file.name), // Log names of uploaded files
+    });
 
     try {
       setLoading(true);
-      // Ensure profileId is defined and properly formatted
-      await axios.post(`http://127.0.0.1:5000/update-profile?profile_id=${profileId}`, profile, {
+      const response = await axios.post(
+        `http://127.0.0.1:5000/update-profile?profile_id=${profileId}`,
+        data,
+        {
           headers: {
             "Content-Type": "multipart/form-data",
-            // "Content-Type": "application/json",
             Authorization: `Bearer ${token}`,
           },
-        })
-        .then((response) => console.log(response))
-        .catch((error) => console.error("Error updating profile:", error));
-    //   console.log(response.data);
-      // console.log("Profile ID:", profileId);
+        }
+      );
+
+      console.log("Profile update response:", response.data); // Log response
+      setProfile(response.data.profile); // Update the profile state with the new profile data
       alert("Profile updated successfully!");
       navigate(`/profile/${profileId}`);
     } catch (error) {
@@ -97,118 +137,147 @@ const EditProfile = () => {
     }
   };
 
-  if (loading) return <div>Loading...</div>;
+  const fileValidate = (file) => {
+    if (
+      file.type === "image/png" ||
+      file.type === "image/jpg" ||
+      file.type === "image/jpeg"
+    ) {
+      setErrors((prevErrors) => ({
+        ...prevErrors,
+        picture: "",
+      }));
+      return true;
+    } else {
+      setErrors((prevErrors) => ({
+        ...prevErrors,
+        picture: "File type allowed only jpg, png, jpeg",
+      }));
+      return false;
+    }
+  };
 
   return (
-    <div>
-      {/* Flash Messages */}
-      {flashMessage && (
-        <div className={`alert alert-${flashMessage.type}`}>
-          {flashMessage.message}
+    <div className="container mt-5">
+      {flashMessage && <div className={`alert alert-${flashMessage.type}`}>{flashMessage.message}</div>}
+      <form onSubmit={handleSubmit}>
+        <div className="form-group">
+          <label htmlFor="picture">Profile Picture</label>
+          <input
+            type="file"
+            className="form-control"
+            name="picture"
+            multiple
+            onChange={handleChange}
+          />
+          {errors.picture && <div className="alert alert-danger">{errors.picture}</div>}
         </div>
-      )}
-      <form method="POST" onSubmit={handleSubmit}>
-        <div>
-          <label>Name</label>
+        <div className="form-group">
+          <label htmlFor="name">Name</label>
           <input
             type="text"
+            className="form-control"
+            id="name"
             name="name"
             value={profile.name || ""}
             onChange={handleChange}
+            required
           />
-          {errors.name && <div className="error">{errors.name}</div>}
         </div>
-        <div>
-          <label>Username</label>
+        <div className="form-group">
+          <label htmlFor="username">Username</label>
           <input
             type="text"
+            className="form-control"
+            id="username"
             name="username"
             value={profile.username || ""}
             onChange={handleChange}
           />
-          {errors.username && <div className="error">{errors.username}</div>}
         </div>
-        <div>
-          <label>Bio</label>
+        <div className="form-group">
+          <label htmlFor="bio">Bio</label>
           <textarea
+            className="form-control"
+            id="bio"
             name="bio"
             value={profile.bio || ""}
             onChange={handleChange}
           ></textarea>
-          {errors.bio && <div className="error">{errors.bio}</div>}
         </div>
-        <div>
-          <label>Gmail</label>
+        <div className="form-group">
+          <label htmlFor="gmail">Gmail</label>
           <input
-            type="text"
+            type="email"
+            className="form-control"
+            id="gmail"
             name="gmail"
-            value={profile.gmail || ""} // Updated to match Profile class
+            value={profile.gmail || ""}
             onChange={handleChange}
+            required
           />
-          {errors.gmail && <div className="error">{errors.gmail}</div>}
         </div>
-        <div>
-          <label>Facebook</label>
+        <div className="form-group">
+          <label htmlFor="facebook">Facebook</label>
           <input
             type="text"
+            className="form-control"
+            id="facebook"
             name="facebook"
-            value={profile.facebook || ""} // Updated to match Profile class
+            value={profile.facebook || ""}
             onChange={handleChange}
           />
-          {errors.facebook && <div className="error">{errors.facebook}</div>}
         </div>
-        <div>
-          <label>Instagram</label>
+        <div className="form-group">
+          <label htmlFor="instagram">Instagram</label>
           <input
             type="text"
+            className="form-control"
+            id="instagram"
             name="instagram"
-            value={profile.instagram || ""} // Updated to match Profile class
+            value={profile.instagram || ""}
             onChange={handleChange}
           />
-          {errors.instagram && <div className="error">{errors.instagram}</div>}
         </div>
-        <div>
-          <label>X (formerly Twitter)</label>
+        <div className="form-group">
+          <label htmlFor="x">X</label>
           <input
             type="text"
+            className="form-control"
+            id="x"
             name="x"
-            value={profile.x || ""} // Updated to match Profile class
+            value={profile.x || ""}
             onChange={handleChange}
           />
-          {errors.x && <div className="error">{errors.x}</div>}
         </div>
-        <div>
-          <label>LinkedIn</label>
+        <div className="form-group">
+          <label htmlFor="linkedin">LinkedIn</label>
           <input
             type="text"
+            className="form-control"
+            id="linkedin"
             name="linkedin"
-            value={profile.linkedin || ""} // Updated to match Profile class
+            value={profile.linkedin || ""}
             onChange={handleChange}
           />
-          {errors.linkedin && <div className="error">{errors.linkedin}</div>}
         </div>
-        <div>
-          <label>GitHub</label>
+        <div className="form-group">
+          <label htmlFor="github">GitHub</label>
           <input
             type="text"
+            className="form-control"
+            id="github"
             name="github"
-            value={profile.github || ""} // Updated to match Profile class
+            value={profile.github || ""}
             onChange={handleChange}
           />
-          {errors.github && <div className="error">{errors.github}</div>}
         </div>
-        <div>
-          <label>Profile Picture</label>
-          <input type="file" name="picture" onChange={handleChange} />
-          {errors.picture && <div className="error">{errors.picture}</div>}
-        </div>
-        <button type="submit" disabled={loading}>
-          Save Changes
+        <button type="submit" className="btn btn-primary" disabled={loading}>
+          {loading ? "Updating..." : "Update Profile"}
         </button>
       </form>
     </div>
-);
-
+  );
 };
 
 export default EditProfile;
