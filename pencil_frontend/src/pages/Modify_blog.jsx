@@ -6,7 +6,8 @@ import axios from "axios";
 const ModifyPost = () => {
   // const csrfToken = useCsrfToken();
   const { postId } = useParams();
-  const [post, setPost] = useState({ title: "", content: "" });
+  const [post, setPost] = useState({ title: "", content: "", image: ""});
+  const [imagePreview, setImagePreview] = useState(null);
   const [errors, setErrors] = useState({});
   const [flashMessage, setFlashMessage] = useState(null);
   const [token, setToken] = useState(null);
@@ -53,15 +54,33 @@ const ModifyPost = () => {
   }, [postId, navigate, token]);
 
   const handleChange = (e) => {
-    const { name, value } = e.target;
-    setPost((prevPost) => ({
-      ...prevPost,
-      [name]: value,
-    }));
+    const { name, value, files } = e.target;
+    if (files) {
+      const file = files[0];
+      setPost((prev) => ({
+        ...prev,
+        [name]: file,
+      }));
+
+      // Create a preview URL for the uploaded image
+      const previewUrl = URL.createObjectURL(file);
+      setImagePreview(previewUrl); // Set the image preview state
+    } else {
+      setPost((prev) => ({
+        ...prev,
+        [name]: value,
+      }));
+    }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    const formData = new FormData();
+    Object.entries(post).forEach(([key, value]) => {
+      formData.append(key, value);
+    });
+
     try {
       const response = await axios.post(
         `http://127.0.0.1:5000/modify?post_id=${postId}`,
@@ -69,7 +88,8 @@ const ModifyPost = () => {
         {
           headers: {
             Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
+            "Content-Type": "multipart/form-data",
+            //"Content-Type": "application/json",
           },
         }
       );
@@ -104,6 +124,12 @@ const ModifyPost = () => {
       <form method="POST" onSubmit={handleSubmit}>
         {post ? (
           <>
+          <div>
+            <label>Image</label>
+            <input type="file" name="image" onChange={handleChange} />
+            {imagePreview && <img src={imagePreview} alt="Post Preview" style={{ width: '100px', height: '100px' }} />} {/* Display the image preview */}
+            {errors.image && <div className="error">{errors.image}</div>}
+        </div>
             {/* Title Field */}
             <div className="form-group">
               <label htmlFor="title" className="form-label">

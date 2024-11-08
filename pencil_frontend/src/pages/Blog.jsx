@@ -1,7 +1,10 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
-import { useNavigate, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import PropTypes from "prop-types";
+import postImage from "../assets/images/post/post-1.jpg";
+import userImage from "../assets/images/kate-stone.jpg";
+import arrow from "../assets/images/post/arrow.png";
 
 const BlogPage = () => {
   const { postId } = useParams();
@@ -15,7 +18,8 @@ const BlogPage = () => {
   const [isLoading, setIsLoading] = useState(true); // To track loading state
   const [error, setError] = useState(null); // To track errors
   const [token, setToken] = useState(null);
-
+  const [showReplyForm, setShowReplyForm] = useState(false);
+  const [showChildReplyForm, setShowChildReplyForm] = useState(false);
 
   useEffect(() => {
     const savedToken = localStorage.getItem("authToken");
@@ -163,139 +167,487 @@ const BlogPage = () => {
       setError("Error adding child reply.");
     }
   };
+  const handleDeleteBlog = async () => {
+    try {
+      const response = await axios.post(
+        `http://127.0.0.1:5000/delete?post_id=${postId}`,
+        {},  // Empty data payload
+        { headers: { Authorization: `Bearer ${token}` } }  // Headers containing JWT token
+      );
+  
+      if (response.status === 200) {
+        alert("Blog deleted successfully.");
+        navigate("/");  // Navigate to the home page after successful deletion
+      } else {
+        // Handle unexpected status codes
+        alert(response.data.message || "Error deleting blog.");
+      }
+    } catch (error) {
+      if (error.response) {
+        // Specific error based on response status
+        alert(error.response.data.message || "Failed to delete the blog.");
+      } else {
+        // Generic error for other cases
+        alert("An unexpected error occurred. Please try again.");
+      }
+      console.error("Error deleting blog:", error);
+    }
+  };
+  const handleDeleteComment = async (commentId) => {
+    console.log("Attempting to delete comment with ID:", commentId); // Debugging output
+    if (!commentId) {
+      alert("Error: commentId is missing.");
+      return;
+    }
+
+    try {
+      const response = await axios.post(
+        `http://127.0.0.1:5000/delete-comment?comment_id=${commentId}`,
+        {}, // Empty data payload
+        { headers: { Authorization: `Bearer ${token}` } } // Headers containing JWT token
+      );
+
+      // Check for a successful response
+      if (response.status === 200) {
+        alert(response.data.message || "Comment deleted successfully."); // Use the message from the response
+        //navigate(`/blog/${response.data.post_id}`); // Navigate to the post associated with the comment
+        fetchComments(); // Refresh comments after successful deletion
+      } else {
+        // Handle unexpected status codes
+        alert(response.data.message || "Error deleting comment.");
+      }
+    } catch (error) {
+      if (error.response) {
+        alert(error.response.data.message || "Failed to delete the comment.");
+      } else {
+        alert("An unexpected error occurred. Please try again.");
+      }
+      console.error("Error deleting comment:", error);
+    }
+  };
+
+  const handleDeleteReply = async (replyId) => {
+    console.log("Attempting to delete reply with ID:", replyId); // Debugging output
+    if (!replyId) {
+      alert("Error: replyId is missing.");
+      return;
+    }
+  
+    const confirmDelete = window.confirm("Are you sure you want to delete this reply?");
+    if (!confirmDelete) return;
+  
+    try {
+      const response = await axios.post(
+        `http://127.0.0.1:5000/delete-reply-comment?reply_id=${replyId}`,
+        {},  // Empty data payload
+        { headers: { Authorization: `Bearer ${token}` } }  // Headers containing JWT token
+      );
+  
+      if (response.status === 200) {
+        alert(response.data.message || "Reply comment deleted successfully.");
+        fetchComments();  // Refresh comments after successful deletion
+      } else {
+        alert(response.data.message || "Error deleting reply.");
+      }
+    } catch (error) {
+      if (error.response) {
+        alert(error.response.data.message || "Failed to delete the reply.");
+      } else {
+        alert("An unexpected error occurred. Please try again.");
+      }
+      console.error("Error deleting reply:", error);
+    }
+  };
 
   // Save blog
   const handleSaveBlog = async () => {
+    if (!token) {
+      alert("Please log in first!");
+      navigate("/login");  // Redirect to login if not logged in
+      return;
+    }
+
     try {
       const response = await axios.post(
-        `http://127.0.0.1:5000/blog/save?post_id=${postId}`,
-        {},
+        `http://127.0.0.1:5000/blog?post_id=${postId}`,
+        {'save': true},
         {
-          headers: { Authorization: `Bearer ${token}` },
+          headers: {
+            Authorization: `Bearer ${token}`,  // Include the token for authorization
+          },
         }
       );
       setSaveMessage(response.data.message);
+      console.log("Blog saved successfully:", response.data);
+      navigate(`/saved-items/`);
     } catch (error) {
       console.error("Error saving blog:", error);
       setError("Error saving blog.");
     }
   };
 
-  // Edit blog
-  const handleEditBlog = () => {
-    navigate(`/modify/${postId}`); // Redirect to the modify page
-  };
-  
-  
 
   if (isLoading) return <div>Loading...</div>;
   if (error) return <div>Error: {error}</div>;
+
+  const toggleReplyForm = (commentId) => {
+    setShowReplyForm((prevState) => ({
+      ...prevState,
+      [commentId]: !prevState[commentId],
+    }));
+  };
+  const toggleChildReplyForm = (replyId) => {
+    setShowChildReplyForm((prevState) => ({
+      ...prevState,
+      [replyId]: !prevState[replyId],
+    }));
+  };
 
   return (
     <div>
       {/* Blog Post */}
       {blog && (
         <div className="blog-post">
-          <h1>{blog.title}</h1>
-          <p>{blog.content}</p>
-          <button onClick={handleSaveBlog} className="btn btn-success">
-            Save Blog
-          </button>
-          {saveMessage && <p>{saveMessage}</p>}
-          <button onClick={handleEditBlog} className="btn btn-primary">
-            Edit Blog
-          </button>
+          <section className="section">
+            <div className="container">
+              <div className="row justify-content-center">
+                <div className=" col-lg-9  mb-5 mb-lg-0">
+                  <article>
+                    <div className="post-slider mb-4">
+                      <img
+                        src={`http://127.0.0.1:5000/static/uploads/${blog.post_image}`}
+                        className="card-img"
+                        alt="post-thumb"
+                      ></img>
+                    </div>
+                    <h1 className="h2">{blog.title} </h1>
+                    <div className="d-flex justify-content-between">
+                      <ul className="card-meta my-3 list-inline">
+                        <li className="list-inline-item">
+                          <a
+                            href="author-single.html"
+                            className="card-meta-author"
+                          >
+                            <img src={userImage}></img>
+                            <span>Charls Xaviar</span>
+                          </a>
+                        </li>
+                        <li className="list-inline-item">
+                          <i className="ti-calendar"></i>{new Date( blog.publication_date).toLocaleString("en-US", {
+                            month: "long",
+                            day: "numeric",
+                            year: "numeric",
+                            hour: "numeric",
+                            minute: "2-digit",
+                            hour12: true,
+                            })}
+                        </li>
+                      </ul>
+                      <Link to={`/modify/${postId}`} role="button" 
+                        className="ti-pencil-alt pointer-crouser fs-4">
+                      </Link>
+                      <Link to="#" role="button" className="ti-trash pointer-cursor fs-4"
+                        onClick={handleDeleteBlog}>
+                      </Link>
+                      <Link to="#" role="button" 
+                        className="ti-save pointer-cursor fs-4" onClick={handleSaveBlog}>
+                      </Link>
+                    </div>
+
+                    <div className="content">
+                      <p>{blog.content}</p>
+                    </div>
+                  </article>
+                  {/*    <button onClick={handleSaveBlog} className="btn btn-success">
+                    Save Blog
+                  </button>
+                  {saveMessage && <p>{saveMessage}</p>}*/}
+                </div>
+                {/* Comments Section */}
+                <div className="col-lg-9 col-md-12">
+                  <div className="mb-5 border-top mt-4 pt-5">
+                    <h3 className="mb-4">Comments</h3>
+                    {comments.length > 0 ? (
+                      comments.map((comment) => (
+                        <div key={comment.id} className="comment">
+                          <div className="media d-block d-sm-flex mb-4 pb-4">
+                            <a
+                              className="d-inline-block mr-2 mb-3 mb-md-0"
+                              href={`/profile/${comment.comment_owner}`}
+                            >
+                              <img
+                                src={userImage}
+                                width={70}
+                                height={70}
+                                className="mr-3 rounded-circle"
+                                alt=""
+                              ></img>
+                            </a>
+                            <div className="media-body">
+                              <a
+                                href={`/profile/${comment.comment_owner}`}
+                                className="h4 d-inline-block mb-3"
+                              >
+                                {comment.comment_owner.username}
+                              </a>
+                              <p>{comment.text}</p>
+                              <Link
+                                to={`/modify-comment/${comment.id}`}
+                                role="button"
+                                className="ti-pencil-alt pointer-cursor fs-4"
+                              />
+                              <Link
+                                to="#"
+                                role="button"
+                                className="ti-trash pointer-cursor fs-4"
+                                onClick={() => handleDeleteComment(comment.id)}
+                              >
+                              </Link>
+
+                              <span className="text-black-800 mr-3 font-weight-600">
+                                {new Date(
+                                  comment.publication_date
+                                ).toLocaleString("en-US", {
+                                  month: "long",
+                                  day: "numeric",
+                                  year: "numeric",
+                                  hour: "numeric",
+                                  minute: "2-digit",
+                                  hour12: true,
+                                })}
+                              </span>
+                              <a
+                                className="text-primary font-weight-600 reply-button"
+                                data-comment-id={comment.id}
+                                onClick={() => toggleReplyForm(comment.id)}
+                              >
+                                Reply
+                              </a>
+                              {/* Reply Form */}
+                              {/*<div id="reply-form-{{ comment.id }}" className="reply-form" style="display: none; margin-top: 10px;">*/}
+                              <div
+                                className={`reply-form ${
+                                  showReplyForm[comment.id] ? "show" : ""
+                                }`}
+                              >
+                                {showReplyForm[comment.id] && (
+                                  <form
+                                    className="d-flex justify-content-center align-items-center"
+                                    onSubmit={(e) =>
+                                      handleReplySubmit(e, comment.id)
+                                    }
+                                  >
+                                    <textarea
+                                      rows="auto"
+                                      minrows="3"
+                                      value={replyText[comment.id] || ""}
+                                      className="form-control shadow-none reply"
+                                      onChange={(e) =>
+                                        setReplyText({
+                                          ...replyText,
+                                          [comment.id]: e.target.value,
+                                        })
+                                      }
+                                      placeholder="Write a reply..."
+                                    />
+
+                                    <button
+                                      className="btn btn-primary px-3 py-2 my-3 ml-2 text-nowrap"
+                                      type="submit"
+                                    >
+                                      send
+                                    </button>
+                                  </form>
+                                )}
+                              </div>
+                              {/*</div>*/}
+                            </div>
+                          </div>
+
+                          {comment.replies &&
+                            comment.replies.map((reply) => (
+                              <div key={reply.id} className="reply ">
+                                <div className="d-flex flex-column align-items-end">
+                                  <div className="media d-block d-sm-flex w-100">
+                                    <div className="d-inline-block mr-2 mb-3 mb-md-0">
+                                      <img
+                                        className="mr-3"
+                                        src={arrow}
+                                        alt=""
+                                      />
+                                      <a href="{`/profile/${reply.responder}`}">
+                                        <img
+                                          src={userImage}
+                                          width={50}
+                                          height={50}
+                                          className="mr-3 rounded-circle"
+                                          alt=""
+                                        />
+                                      </a>
+                                    </div>
+                                    <div className="media-body">
+                                      <a
+                                        href={`/profile/${reply.responder}`}
+                                        className="h4 d-inline-block mb-3"
+                                      >
+                                        {reply.responder.username}
+                                      </a>
+                                      <p>{reply.text}</p>
+                                      <Link to={`/edit-reply-on-comment/${reply.id}`} role="button"
+                                        className="ti-pencil-alt pointer-cursor fs-4"
+                                      ></Link>
+                                      <Link to="#" role="button" className="ti-trash pointer-cursor fs-4"
+                                        onClick={() => handleDeleteReply(reply.id)}>
+                                      </Link>
+                                      <span className="text-black-800 mr-3 font-weight-600">
+                                        {new Date(
+                                          reply.publication_date
+                                        ).toLocaleString("en-US", {
+                                          month: "long",
+                                          day: "numeric",
+                                          year: "numeric",
+                                          hour: "numeric",
+                                          minute: "2-digit",
+                                          hour12: true,
+                                        })}
+                                      </span>
+                                      <a
+                                        className="text-primary font-weight-600 reply-button"
+                                        data-comment-id="{{ reply.id }}"
+                                        onClick={() =>
+                                          toggleChildReplyForm(reply.id)
+                                        }
+                                      >
+                                        Reply
+                                      </a>
+                                    </div>
+
+                                    {/* Child Reply Form */}
+                                    {/*<div id="reply-form-{{ reply.id }}" className="reply-form" style="display: none; margin-top: 10px;">*/}
+                                  </div>
+                                  <div
+                                    className={`reply-child reply-form ${
+                                      showChildReplyForm[reply.id] ? "show" : ""
+                                    }`}
+                                  >
+                                    {showChildReplyForm[reply.id] && (
+                                      <form
+                                        className="d-flex justify-content-center align-items-center"
+                                        onSubmit={(e) =>
+                                          handleChildReplySubmit(e, reply.id)
+                                        }
+                                      >
+                                        <textarea
+                                          rows="auto"
+                                          minrows="3"
+                                          value={childReplyText[reply.id] || ""}
+                                          className="form-control shadow-none reply"
+                                          onChange={(e) =>
+                                            setChildReplyText({
+                                              ...childReplyText,
+                                              [reply.id]: e.target.value,
+                                            })
+                                          }
+                                          placeholder="Write a reply to this reply..."
+                                        />
+                                        <button
+                                          className="btn btn-primary px-3 py-2 my-3 ml-2 text-nowrap"
+                                          type="submit"
+                                        >
+                                          Comment Now
+                                        </button>
+                                      </form>
+                                    )}
+                                  </div>
+                                </div>
+                                {reply.replies &&
+                                  reply.replies.map((childReply) => (
+                                    <div
+                                      key={childReply.id}
+                                      className="ml-5 mt-3 child-reply"
+                                    >
+                                      <div className="media d-block d-sm-flex w-100">
+                                        <div
+                                          className="d-inline-block mr-2 mb-3 mb-md-0"
+                                          href={`/profile/${childReply.child_reply_owner}`}
+                                        >
+                                          <img
+                                            className="mr-3"
+                                            src={arrow}
+                                            alt=""
+                                          />
+                                          <a href="{`/profile/${reply.responder}`}">
+                                            <img
+                                              src={userImage}
+                                              width={50}
+                                              height={50}
+                                              className="mr-3 rounded-circle"
+                                              alt=""
+                                            />
+                                          </a>
+                                        </div>
+
+                                        <div className="media-body">
+                                          <a
+                                            href={`/profile/${childReply.child_reply_owner}`}
+                                            className="h4 d-inline-block mb-3"
+                                          >
+                                            {
+                                              childReply.child_reply_owner
+                                                .username
+                                            }
+                                          </a>
+                                          <p>{childReply.text}</p>
+
+                                          <span className="text-black-800 mr-3 font-weight-600">
+                                            {new Date(
+                                              childReply.publication_date
+                                            ).toLocaleString("en-US", {
+                                              month: "long",
+                                              day: "numeric",
+                                              year: "numeric",
+                                              hour: "numeric",
+                                              minute: "2-digit",
+                                              hour12: true,
+                                            })}
+                                          </span>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  ))}
+                              </div>
+                            ))}
+                        </div>
+                      ))
+                    ) : (
+                      <p>No comments yet.</p>
+                    )}
+                  </div>
+                  <div>
+                    <h3 className="mb-4">Leave a Reply</h3>
+                    <form onSubmit={handleCommentSubmit}>
+                      <div className="row">
+                        <div className="form-group col-md-12">
+                          <textarea
+                            className="form-control shadow-none"
+                            value={commentText}
+                            onChange={(e) => setCommentText(e.target.value)}
+                            placeholder="Write your comment..."
+                            required
+                          ></textarea>
+                        </div>
+                      </div>
+                      <button className="btn btn-primary" type="submit">
+                        Comment Now
+                      </button>
+                    </form>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
         </div>
       )}
-
-      {/* Comments Section */}
-      <div className="comments-section">
-        <h3>Comments</h3>
-        {comments.length > 0 ? (
-          comments.map((comment) => (
-            <div key={comment.id} className="comment">
-              <p>
-                <strong>{comment.comment_owner}</strong>: {comment.text}
-              </p>
-              <small>
-                {new Date(comment.publication_date).toLocaleString()}
-              </small>
-
-              {/* Reply Form */}
-              <form onSubmit={(e) => handleReplySubmit(e, comment.id)}>
-                <textarea
-                  value={replyText[comment.id] || ""}
-                  onChange={(e) =>
-                    setReplyText({ ...replyText, [comment.id]: e.target.value })
-                  }
-                  placeholder="Write a reply..."
-                />
-                <button type="submit">Reply</button>
-              </form>
-
-              {/* Replies to Comment */}
-              {comment.replies &&
-                comment.replies.map((reply) => (
-                  <div key={reply.id} className="reply">
-                    <p>
-                      <strong>{reply.responder}</strong>: {reply.text}
-                    </p>
-                    <small>
-                      {new Date(reply.publication_date).toLocaleString()}
-                    </small>
-
-                    {/* Child Reply Form */}
-                    <form onSubmit={(e) => handleChildReplySubmit(e, reply.id)}>
-                      <textarea
-                        value={childReplyText[reply.id] || ""}
-                        onChange={(e) =>
-                          setChildReplyText({
-                            ...childReplyText,
-                            [reply.id]: e.target.value,
-                          })
-                        }
-                        placeholder="Write a reply to this reply..."
-                      />
-                      <button type="submit">Reply</button>
-                    </form>
-
-                    {/* Child Replies */}
-                    {reply.replies &&
-                      reply.replies.map((childReply) => (
-                        <div key={childReply.id} className="child-reply">
-                          <p>
-                            <strong>{childReply.child_reply_owner}</strong>:{" "}
-                            {childReply.text}
-                          </p>
-                          <small>
-                            {new Date(
-                              childReply.publication_date
-                            ).toLocaleString()}
-                          </small>
-                        </div>
-                      ))}
-                  </div>
-                ))}
-            </div>
-          ))
-        ) : (
-          <p>No comments yet.</p>
-        )}
-
-        {/* Add New Comment */}
-        <div className="new-comment">
-          <h4>Leave a Comment</h4>
-          <form onSubmit={handleCommentSubmit}>
-            <textarea
-              value={commentText}
-              onChange={(e) => setCommentText(e.target.value)}
-              placeholder="Write your comment..."
-              required
-            />
-            <button type="submit">Comment Now</button>
-          </form>
-        </div>
-      </div>
     </div>
   );
 };
