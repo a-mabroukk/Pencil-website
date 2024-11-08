@@ -12,8 +12,8 @@ import SavedItems from "./pages/SavedItems";
 import ModifyPost from "./pages/Modify_blog";
 import EditProfile from "./pages/Edit_profile";
 import UserProfile from "./pages/Profile";
-import UpdateComment from "./pages/Update_comment";
-import EditReply from "./pages/EditReply";
+//import UpdateComment from "./pages/Update_comment";
+//import EditReply from "./pages/EditReply";
 import { UserProvider } from "./components/Context"; // Import the provider
 import Footer from "./components/Footer/Footer";
 
