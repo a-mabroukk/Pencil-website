@@ -1,8 +1,6 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
-import postImage from "../assets/images/post/post-1.jpg";
-import userImage from "../assets/images/kate-stone.jpg";
-import arrow from "../assets/images/post/arrow.png";
+import noSearchFound from "../assets/images/no-search-found.svg";
 
 const HomePage = () => {
   const [posts, setPosts] = useState([]);
@@ -144,8 +142,8 @@ const HomePage = () => {
                           <ul className="card-meta list-inline">
                             <li className="list-inline-item">
                               <a href={`/profile/${post.owner}`} className="card-meta-author">
-                                <img src={`http://127.0.0.1:5000/static/uploads/${post.image}`} alt="John Doe"/>
-                                <span>{post.userName}</span>
+                                <img src={`http://127.0.0.1:5000/static/uploads/${post?.owned_user?.profile?.profile_picture}`} alt={post.username}/>
+                                <span>{post?.owned_user?.profile?.username}</span>
                               </a>
                             </li>
                             <li className="list-inline-item">
@@ -160,7 +158,7 @@ const HomePage = () => {
                   ))
                 ) : (
                   <div className="col-lg-10 text-center">
-                    <img className="mb-5" src="images/no-search-found.svg" alt=""/>
+                    <img className="mb-5" src={noSearchFound} alt="No Search Found"/>
                     <h3>No Search Found</h3>
                   </div>
                 )}
@@ -187,8 +185,8 @@ const HomePage = () => {
                     <ul className="card-meta list-inline">
                       <li className="list-inline-item">
                         <a href={`/profile/${post.owner}`} className="card-meta-author">
-                          <img src={`http://127.0.0.1:5000/static/uploads/${post.image}`} alt="John Doe"/>
-                          <span>{post.userName}</span>
+                          <img src={`http://127.0.0.1:5000/static/uploads/${post?.owned_user?.profile?.profile_picture}`} alt={post.username}/>
+                          <span>{post?.owned_user?.profile?.username}</span>
                         </a>
                       </li>
                       <li className="list-inline-item">

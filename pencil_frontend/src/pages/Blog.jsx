@@ -410,18 +410,21 @@ const BlogPage = () => {
                                 {comment.userName}
                               </a>
                               <p>{comment.text}</p>
-                              <Link
+                              {comment.comment_owner == comment.currentUser && (
+                                <>
+                                <Link
                                 to={`/modify-comment/${comment.id}`}
                                 role="button"
                                 className="ti-pencil-alt pointer-cursor fs-4"
-                              />
-                              <Link
-                                to="#"
-                                role="button"
-                                className="ti-trash pointer-cursor fs-4"
-                                onClick={() => handleDeleteComment(comment.id)}
-                              ></Link>
-
+                                />
+                                <Link
+                                  to="#"
+                                  role="button"
+                                  className="ti-trash pointer-cursor fs-4"
+                                  onClick={() => handleDeleteComment(comment.id)}
+                                ></Link>
+                                </>
+                              )}
                               <span className="text-black-800 mr-3 font-weight-600">
                                 {new Date(
                                   comment.publication_date
@@ -488,6 +491,11 @@ const BlogPage = () => {
                                 <div className="d-flex flex-column align-items-end">
                                   <div className="media d-block d-sm-flex w-100">
                                     <div className="d-inline-block mr-2 mb-3 mb-md-0">
+                                      <img
+                                        className="mr-3"
+                                        src={arrow}
+                                        alt=""
+                                      />
                                       <a href={`/profile/${reply.responder}`}>
                                         <img
                                           src={`http://127.0.0.1:5000/static/uploads/${reply.image}`}
@@ -506,19 +514,21 @@ const BlogPage = () => {
                                         {reply.userName}
                                       </a>
                                       <p>{reply.text}</p>
-                                      <Link
-                                        to={`/edit-reply-on-comment/${reply.id}`}
-                                        role="button"
-                                        className="ti-pencil-alt pointer-cursor fs-4"
-                                      ></Link>
-                                      <Link
-                                        to="#"
-                                        role="button"
-                                        className="ti-trash pointer-cursor fs-4"
-                                        onClick={() =>
-                                          handleDeleteReply(reply.id)
-                                        }
-                                      ></Link>
+                                      {reply.responder == reply.currentUser && (
+                                        <><Link
+                                            to={`/edit-reply-on-comment/${reply.id}`}
+                                            role="button"
+                                            className="ti-pencil-alt pointer-cursor fs-4"
+                                            ></Link>
+                                            <Link
+                                            to="#"
+                                            role="button"
+                                            className="ti-trash pointer-cursor fs-4"
+                                            onClick={() =>
+                                            handleDeleteReply(reply.id)
+                                            }
+                                        ></Link></>
+                                        )}
                                       <span className="text-black-800 mr-3 font-weight-600">
                                         {new Date(
                                           reply.publication_date
@@ -582,10 +592,20 @@ const BlogPage = () => {
                                 </div>
                                 {reply.replies &&
                                   reply.replies.map((childReply) => (
-                                    <div key={childReply.id} className="ml-5 mt-3 child-reply">
+                                    <div
+                                      key={childReply.id}
+                                      className="ml-5 mt-3 child-reply"
+                                    >
                                       <div className="media d-block d-sm-flex w-100">
-                                        <div className="d-inline-block mr-2 mb-3 mb-md-0"
-                                          href={`/profile/${childReply.child_reply_owner}`}>
+                                        <div
+                                          className="d-inline-block mr-2 mb-3 mb-md-0"
+                                          href={`/profile/${childReply.child_reply_owner}`}
+                                        >
+                                          <img
+                                            className="mr-3"
+                                            src={arrow}
+                                            alt=""
+                                          />
                                           <a>
                                             <img
                                               src={`http://127.0.0.1:5000/static/uploads/${childReply.image}`}
