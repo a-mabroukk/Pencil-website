@@ -30,6 +30,7 @@ class LoginForm(FlaskForm):
     submit = SubmitField(label="LogIn")
 
 class PostForm(FlaskForm):
+    image = FileField(label="Image", validators=[DataRequired()])
     title = StringField(label="Title:", validators=[Length(max=100), DataRequired()])
     content = TextAreaField(label="Create a post", validators=[DataRequired()])
     submit = SubmitField(label="Save")

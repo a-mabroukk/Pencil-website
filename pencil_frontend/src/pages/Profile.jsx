@@ -173,9 +173,9 @@ const UserProfile = () => {
                         <h2 className="mb-3"><a className="post-title" href={`/blog/${post.id}`} key={post.id}>{post.title}</a></h2>
                         <ul className="card-meta list-inline">
                           <li className="list-inline-item">
-                            <a href={`/update-profile/${profile.owner}`} className="card-meta-author">
+                            <a href={`/profile/${profile.id}`} className="card-meta-author">
                               <img src={`http://127.0.0.1:5000/static/uploads/${profile.profile_picture}`}/>
-                              <span></span>
+                              <span>{profile.name}</span>
                             </a>
                           </li>
                           <li className="list-inline-item">

@@ -95,6 +95,8 @@ def blog_page():
 
     if post_id:
         requested_blog = Post.query.filter_by(id=post_id).first()
+        creator_profile = requested_blog.owned_user.profile
+        print("Requested blog:", creator_profile)
         if requested_blog:
             if request.method == "POST":
                 data = request.get_json()
@@ -177,8 +179,9 @@ def blog_page():
                         comment_data["replies"].append(reply_data)
 
                     comments_response.append(comment_data)
+                print("Comments response:", requested_blog.owned_user)
                 return jsonify({"post": {"id": requested_blog.id, "post_image": requested_blog.post_image, "title": requested_blog.title, "content": requested_blog.content,
-                                        "publication_date": requested_blog.publication_date}, "comments": comments_response}), 200
+                                        "publication_date": requested_blog.publication_date, "owner_id": requested_blog.owner, "currentUser": user_id, "userName": requested_blog.owned_user.profile.username, "image": requested_blog.owned_user.profile.profile_picture}, "comments": comments_response}), 200
                 #return render_template("blog.html", post_id=requested_blog, comment_form=comment_form,
                                         #posted_comments=comment_with_replies, reply_form=reply_form, replies_reply_form=replies_reply_form)
             else:
@@ -416,11 +419,7 @@ def profile():
 @cross_origin()
 def my_profile():
     current_user.id = get_jwt_identity()
-    my_profile = Profile.query.filter_by(users_profile=current_user.id).first()
-    if my_profile:
-        profile = my_profile.to_dict()
-        return jsonify({"profile": profile, "category": "success"}), 200
-    return jsonify({"profile": profile, "category": "success"}), 200
+    return jsonify({"profileId": current_user.id, "category": "success"}), 200
 
 @app.route("/update-profile", methods=["POST", "GET"])
 #@login_required

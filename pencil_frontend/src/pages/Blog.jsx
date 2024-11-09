@@ -171,13 +171,13 @@ const BlogPage = () => {
     try {
       const response = await axios.post(
         `http://127.0.0.1:5000/delete?post_id=${postId}`,
-        {},  // Empty data payload
-        { headers: { Authorization: `Bearer ${token}` } }  // Headers containing JWT token
+        {}, // Empty data payload
+        { headers: { Authorization: `Bearer ${token}` } } // Headers containing JWT token
       );
-  
+
       if (response.status === 200) {
         alert("Blog deleted successfully.");
-        navigate("/");  // Navigate to the home page after successful deletion
+        navigate("/"); // Navigate to the home page after successful deletion
       } else {
         // Handle unexpected status codes
         alert(response.data.message || "Error deleting blog.");
@@ -232,20 +232,22 @@ const BlogPage = () => {
       alert("Error: replyId is missing.");
       return;
     }
-  
-    const confirmDelete = window.confirm("Are you sure you want to delete this reply?");
+
+    const confirmDelete = window.confirm(
+      "Are you sure you want to delete this reply?"
+    );
     if (!confirmDelete) return;
-  
+
     try {
       const response = await axios.post(
         `http://127.0.0.1:5000/delete-reply-comment?reply_id=${replyId}`,
-        {},  // Empty data payload
-        { headers: { Authorization: `Bearer ${token}` } }  // Headers containing JWT token
+        {}, // Empty data payload
+        { headers: { Authorization: `Bearer ${token}` } } // Headers containing JWT token
       );
-  
+
       if (response.status === 200) {
         alert(response.data.message || "Reply comment deleted successfully.");
-        fetchComments();  // Refresh comments after successful deletion
+        fetchComments(); // Refresh comments after successful deletion
       } else {
         alert(response.data.message || "Error deleting reply.");
       }
@@ -263,17 +265,17 @@ const BlogPage = () => {
   const handleSaveBlog = async () => {
     if (!token) {
       alert("Please log in first!");
-      navigate("/login");  // Redirect to login if not logged in
+      navigate("/login"); // Redirect to login if not logged in
       return;
     }
 
     try {
       const response = await axios.post(
         `http://127.0.0.1:5000/blog?post_id=${postId}`,
-        {'save': true},
+        { save: true },
         {
           headers: {
-            Authorization: `Bearer ${token}`,  // Include the token for authorization
+            Authorization: `Bearer ${token}`, // Include the token for authorization
           },
         }
       );
@@ -285,7 +287,6 @@ const BlogPage = () => {
       setError("Error saving blog.");
     }
   };
-
 
   if (isLoading) return <div>Loading...</div>;
   if (error) return <div>Error: {error}</div>;
@@ -325,33 +326,51 @@ const BlogPage = () => {
                       <ul className="card-meta my-3 list-inline">
                         <li className="list-inline-item">
                           <a
-                            href="author-single.html"
+                            href={`/profile/${blog.owner_id}`}
                             className="card-meta-author"
                           >
-                            <img src={userImage}></img>
-                            <span>Charls Xaviar</span>
+                            <img
+                              src={`http://127.0.0.1:5000/static/uploads/${blog.image}`}
+                            ></img>
+                            <span>{blog.userName}</span>
                           </a>
                         </li>
                         <li className="list-inline-item">
-                          <i className="ti-calendar"></i>{new Date( blog.publication_date).toLocaleString("en-US", {
-                            month: "long",
-                            day: "numeric",
-                            year: "numeric",
-                            hour: "numeric",
-                            minute: "2-digit",
-                            hour12: true,
-                            })}
+                          <i className="ti-calendar"></i>
+                          {new Date(blog.publication_date).toLocaleString(
+                            "en-US",
+                            {
+                              month: "long",
+                              day: "numeric",
+                              year: "numeric",
+                              hour: "numeric",
+                              minute: "2-digit",
+                              hour12: true,
+                            }
+                          )}
                         </li>
                       </ul>
-                      <Link to={`/modify/${postId}`} role="button" 
-                        className="ti-pencil-alt pointer-crouser fs-4">
-                      </Link>
-                      <Link to="#" role="button" className="ti-trash pointer-cursor fs-4"
-                        onClick={handleDeleteBlog}>
-                      </Link>
-                      <Link to="#" role="button" 
-                        className="ti-save pointer-cursor fs-4" onClick={handleSaveBlog}>
-                      </Link>
+                      {blog.is_owner == blog.currentUser && (
+                        <>
+                          <Link
+                            to={`/modify/${postId}`}
+                            role="button"
+                            className="ti-pencil-alt pointer-crouser fs-4"
+                          ></Link>
+                          <Link
+                            to="#"
+                            role="button"
+                            className="ti-trash pointer-cursor fs-4"
+                            onClick={handleDeleteBlog}
+                          ></Link>
+                        </>
+                      )}
+                      <Link
+                        to="#"
+                        role="button"
+                        className="ti-save pointer-cursor fs-4"
+                        onClick={handleSaveBlog}
+                      ></Link>
                     </div>
 
                     <div className="content">
@@ -401,8 +420,7 @@ const BlogPage = () => {
                                 role="button"
                                 className="ti-trash pointer-cursor fs-4"
                                 onClick={() => handleDeleteComment(comment.id)}
-                              >
-                              </Link>
+                              ></Link>
 
                               <span className="text-black-800 mr-3 font-weight-600">
                                 {new Date(
@@ -475,7 +493,7 @@ const BlogPage = () => {
                                         src={arrow}
                                         alt=""
                                       />
-                                      <a href="{`/profile/${reply.responder}`}">
+                                      <a href={`/profile/${reply.responder}`}>
                                         <img
                                           src={userImage}
                                           width={50}
@@ -493,12 +511,19 @@ const BlogPage = () => {
                                         {reply.responder.username}
                                       </a>
                                       <p>{reply.text}</p>
-                                      <Link to={`/edit-reply-on-comment/${reply.id}`} role="button"
+                                      <Link
+                                        to={`/edit-reply-on-comment/${reply.id}`}
+                                        role="button"
                                         className="ti-pencil-alt pointer-cursor fs-4"
                                       ></Link>
-                                      <Link to="#" role="button" className="ti-trash pointer-cursor fs-4"
-                                        onClick={() => handleDeleteReply(reply.id)}>
-                                      </Link>
+                                      <Link
+                                        to="#"
+                                        role="button"
+                                        className="ti-trash pointer-cursor fs-4"
+                                        onClick={() =>
+                                          handleDeleteReply(reply.id)
+                                        }
+                                      ></Link>
                                       <span className="text-black-800 mr-3 font-weight-600">
                                         {new Date(
                                           reply.publication_date
