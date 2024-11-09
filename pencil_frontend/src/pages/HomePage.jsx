@@ -143,9 +143,9 @@ const HomePage = () => {
                           <h3 className="h4 mb-3"><a className="post-title" href={`/blog/${post.id}`}>{post.title}</a></h3>
                           <ul className="card-meta list-inline">
                             <li className="list-inline-item">
-                              <a href="author-single.html" className="card-meta-author">
-                                <img src="images/john-doe.jpg" alt="John Doe"/>
-                                <span>John Doe</span>
+                              <a href={`/profile/${post.owner}`} className="card-meta-author">
+                                <img src={`http://127.0.0.1:5000/static/uploads/${post.image}`} alt="John Doe"/>
+                                <span>{post.userName}</span>
                               </a>
                             </li>
                             <li className="list-inline-item">
@@ -186,9 +186,9 @@ const HomePage = () => {
                     <h3 className="h4 mb-3"><a className="post-title" href={`/blog/${post.id}`}>{post.title}</a></h3>
                     <ul className="card-meta list-inline">
                       <li className="list-inline-item">
-                        <a href="author-single.html" className="card-meta-author">
-                          <img src="images/john-doe.jpg" alt="John Doe"/>
-                          <span>John Doe</span>
+                        <a href={`/profile/${post.owner}`} className="card-meta-author">
+                          <img src={`http://127.0.0.1:5000/static/uploads/${post.image}`} alt="John Doe"/>
+                          <span>{post.userName}</span>
                         </a>
                       </li>
                       <li className="list-inline-item">

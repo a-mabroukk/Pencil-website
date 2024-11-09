@@ -161,19 +161,20 @@ def blog_page():
                                         .order_by(Comment.publication_date.desc()).all())
                 comments_response = []
                 for comment in comment_with_replies:
-                    comment_data = {"id": comment.id, "text": comment.text, "comment_owner": comment.comment_owner, "publication_date": comment.publication_date,
-                                    "replies": []}  # This will hold the replies to this comment
+                    comment_data = {"id": comment.id, "text": comment.text, "comment_owner": comment.comment_owner,
+                                    "userName": comment.owned_commentator.profile.username, "publication_date": comment.publication_date,
+                                    "image": comment.owned_commentator.profile.profile_picture, "replies": []}  # This will hold the replies to this comment
 
 
                     # Add replies to the comment
                     for reply in comment.reply_comments:
                         reply_data = { "id": reply.id, "text": reply.text, "responder": reply.responder, "publication_date": reply.publication_date,
-                                      "replies": []}  # This will hold replies to this reply (if needed)
+                                    "userName": reply.owned_responder.profile.username, "image": reply.owned_responder.profile.profile_picture, "replies": []}  # This will hold replies to this reply (if needed)
 
                     # If you have a structure for replies on replies, you can populate them here
                         for child_reply in reply.replies_on_reply:
                             child_reply_data = {"id": child_reply.id, "text": child_reply.text, "child_reply_owner": child_reply.child_reply_owner,
-                                                "publication_date": child_reply.publication_date}
+                                                "publication_date": child_reply.publication_date, "userName": child_reply.who_reply.profile.username, "image": child_reply.who_reply.profile.profile_picture}
                             reply_data["replies"].append(child_reply_data)
 
                         comment_data["replies"].append(reply_data)
@@ -181,7 +182,7 @@ def blog_page():
                     comments_response.append(comment_data)
                 print("Comments response:", requested_blog.owned_user)
                 return jsonify({"post": {"id": requested_blog.id, "post_image": requested_blog.post_image, "title": requested_blog.title, "content": requested_blog.content,
-                                        "publication_date": requested_blog.publication_date, "owner_id": requested_blog.owner, "currentUser": user_id, "userName": requested_blog.owned_user.profile.username, "image": requested_blog.owned_user.profile.profile_picture}, "comments": comments_response}), 200
+                                        "publication_date": requested_blog.publication_date, "owner": requested_blog.owner, "currentUser": user_id, "userName": requested_blog.owned_user.profile.username, "image": requested_blog.owned_user.profile.profile_picture}, "comments": comments_response}), 200
                 #return render_template("blog.html", post_id=requested_blog, comment_form=comment_form,
                                         #posted_comments=comment_with_replies, reply_form=reply_form, replies_reply_form=replies_reply_form)
             else:

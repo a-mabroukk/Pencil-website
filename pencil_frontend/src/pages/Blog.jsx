@@ -326,7 +326,7 @@ const BlogPage = () => {
                       <ul className="card-meta my-3 list-inline">
                         <li className="list-inline-item">
                           <a
-                            href={`/profile/${blog.owner_id}`}
+                            href={`/profile/${blog.owner}`}
                             className="card-meta-author"
                           >
                             <img
@@ -350,7 +350,7 @@ const BlogPage = () => {
                           )}
                         </li>
                       </ul>
-                      {blog.is_owner == blog.currentUser && (
+                      {blog.owner == blog.currentUser && (
                         <>
                           <Link
                             to={`/modify/${postId}`}
@@ -395,7 +395,7 @@ const BlogPage = () => {
                               href={`/profile/${comment.comment_owner}`}
                             >
                               <img
-                                src={userImage}
+                                src={`http://127.0.0.1:5000/static/uploads/${comment.image}`}
                                 width={70}
                                 height={70}
                                 className="mr-3 rounded-circle"
@@ -407,7 +407,7 @@ const BlogPage = () => {
                                 href={`/profile/${comment.comment_owner}`}
                                 className="h4 d-inline-block mb-3"
                               >
-                                {comment.comment_owner.username}
+                                {comment.userName}
                               </a>
                               <p>{comment.text}</p>
                               <Link
@@ -488,14 +488,9 @@ const BlogPage = () => {
                                 <div className="d-flex flex-column align-items-end">
                                   <div className="media d-block d-sm-flex w-100">
                                     <div className="d-inline-block mr-2 mb-3 mb-md-0">
-                                      <img
-                                        className="mr-3"
-                                        src={arrow}
-                                        alt=""
-                                      />
                                       <a href={`/profile/${reply.responder}`}>
                                         <img
-                                          src={userImage}
+                                          src={`http://127.0.0.1:5000/static/uploads/${reply.image}`}
                                           width={50}
                                           height={50}
                                           className="mr-3 rounded-circle"
@@ -508,7 +503,7 @@ const BlogPage = () => {
                                         href={`/profile/${reply.responder}`}
                                         className="h4 d-inline-block mb-3"
                                       >
-                                        {reply.responder.username}
+                                        {reply.userName}
                                       </a>
                                       <p>{reply.text}</p>
                                       <Link
@@ -587,23 +582,13 @@ const BlogPage = () => {
                                 </div>
                                 {reply.replies &&
                                   reply.replies.map((childReply) => (
-                                    <div
-                                      key={childReply.id}
-                                      className="ml-5 mt-3 child-reply"
-                                    >
+                                    <div key={childReply.id} className="ml-5 mt-3 child-reply">
                                       <div className="media d-block d-sm-flex w-100">
-                                        <div
-                                          className="d-inline-block mr-2 mb-3 mb-md-0"
-                                          href={`/profile/${childReply.child_reply_owner}`}
-                                        >
-                                          <img
-                                            className="mr-3"
-                                            src={arrow}
-                                            alt=""
-                                          />
-                                          <a href="{`/profile/${reply.responder}`}">
+                                        <div className="d-inline-block mr-2 mb-3 mb-md-0"
+                                          href={`/profile/${childReply.child_reply_owner}`}>
+                                          <a>
                                             <img
-                                              src={userImage}
+                                              src={`http://127.0.0.1:5000/static/uploads/${childReply.image}`}
                                               width={50}
                                               height={50}
                                               className="mr-3 rounded-circle"
@@ -617,10 +602,7 @@ const BlogPage = () => {
                                             href={`/profile/${childReply.child_reply_owner}`}
                                             className="h4 d-inline-block mb-3"
                                           >
-                                            {
-                                              childReply.child_reply_owner
-                                                .username
-                                            }
+                                            {childReply.userName}
                                           </a>
                                           <p>{childReply.text}</p>
 
