@@ -106,7 +106,7 @@ def blog_page():
                                               comments_on_post=requested_blog.id)
                     db.session.add(comment_to_post)
                     db.session.commit()
-                    return jsonify({"message": "Comment added successfully", "category": "success", "post_id": post_id}), 201
+                    return jsonify({"message": "Comment added successfully", "category": "success", "post_id": post_id}), 200
 
                 if reply_form.reply.data:
                     comment_id = data.get("comment_id")
@@ -115,7 +115,7 @@ def blog_page():
                                                      reply_comment=comment_id)
                         db.session.add(reply_to_post)
                         db.session.commit()
-                        return jsonify({"message": "reply added successfully", "category": "success", "post_id": post_id}), 
+                        return jsonify({"message": "reply added successfully", "category": "success", "post_id": post_id}), 200
 
                 if  replies_reply_form.reply_reply.data:
                     reply_id = data.get("reply_id")
@@ -124,7 +124,7 @@ def blog_page():
                                                       replies_reply=reply_id)
                         db.session.add(replies_to_reply)
                         db.session.commit()
-                        return jsonify({"message": "reply added successfully", "category": "success", "post_id": post_id}), 201
+                        return jsonify({"message": "reply added successfully", "category": "success", "post_id": post_id}), 200
 
             if request.method == "GET":
                 # Display a specific blog with its comments and the replies associated with those comments
@@ -208,7 +208,6 @@ def modify_comment():
 
 
 @app.route("/edit-reply-on-comment", methods=["POST", "GET"])
-#@login_required
 @jwt_required()
 @cross_origin()
 def update_reply():
@@ -272,7 +271,7 @@ def modify_post():
         else:
             # Render the form again with errors
             return jsonify({"message": "Form validation failed", "errors": form.errors}), 400
-    return jsonify({"post": post.to_dict()}), 200
+    return jsonify({"title": post.title, "content": post.content, "publication_date": post.publication_date}), 200
 
 
 @app.route("/delete", methods=["POST", "GET"])

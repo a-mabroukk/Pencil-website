@@ -351,7 +351,7 @@ const BlogPage = () => {
                       {blog.owner == blog.currentUser && (
                         <>
                           <Link
-                            to={`/modify/${postId}`}
+                            to={`/modify/${blog.id}`}
                             role="button"
                             className="ti-pencil-alt pointer-crouser fs-4"
                           ></Link>
