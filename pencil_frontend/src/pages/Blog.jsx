@@ -2,8 +2,6 @@ import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import PropTypes from "prop-types";
-import postImage from "../assets/images/post/post-1.jpg";
-import userImage from "../assets/images/kate-stone.jpg";
 import arrow from "../assets/images/post/arrow.png";
 
 const BlogPage = () => {

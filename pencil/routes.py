@@ -13,7 +13,6 @@ from flask_jwt_extended import create_access_token, get_jwt_identity, jwt_requir
 
 @app.route("/")
 @app.route("/home", methods=["GET", "POST"])
-# @login_required
 @cross_origin()
 def home_page():
     search_form = SearchForm()
@@ -27,28 +26,19 @@ def home_page():
         if not search_results:
             flash("No results found", category="info")
             return jsonify("No results found"), 200
-            # return redireact(url_for("home_page", search_results=[]))  # Redirect with empty results
         search_result = [res.to_dict() for res in search_results]
-        #search_result = []
-        #for res in search_results:
-            #search_result.append(res.to_dict())
         return jsonify(search_result)
     posts = Post.query.order_by(Post.title.desc()).limit(20).all()
-    #for post in posts:
-        #posts_dict.append(post.to_dict())
     posts_dict = [post.to_dict() for post in posts]
     return jsonify(posts_dict)
-    # return render_template("home.html", posts=posts, search_form=search_form, search_results=search_results)
 
 @app.route("/publish", methods=["POST", "GET"])
-# @login_required
 @jwt_required()
 @cross_origin()
 def posting_page():
     post_form = PostForm()
     user_id = get_jwt_identity()
     # Publishing a post
-    #if post_form.validate_on_submit(): # Ensure the form is valid
     if request.method == "POST":
         print("POST request received",post_form.title.data)
         if post_form.title.data:
@@ -69,20 +59,15 @@ def posting_page():
                 db.session.add(post_to_create)
                 db.session.commit()
                 return jsonify({"message": "The blog has been saved successfully", "category": "success", "post_id":  post_to_create.id}), 201
-                #flash(f"The blog has been saved successfully", category="success")
-                #return redirect(url_for("blog_page", post_id=post_id))
             except Exception as e:
                 db.session.rollback()  # Rollback in case of error
                 flash("An error occurred while saving the post. Please try again.", category="danger")
     if post_form.errors != {}:
         for error_message in post_form.errors.values():
             return jsonify(errors=post_form.errors, category="danger"), 400
-            #flash(f"There is an error with adding: {error_message}", category="danger")
     return jsonify({"message": "Invalid request."}), 400
-    #return render_template("add_post.html", post_form=post_form)
 
 @app.route("/blog", methods=["POST", "GET"])
-# @login_required
 @jwt_required()
 @cross_origin()
 def blog_page():
@@ -103,9 +88,7 @@ def blog_page():
                 save = data.get('save', False)
                 print("POST request received")
                 if save == True:
-                    #if data.get("action") == "save":
                     print("Save button clicked")
-                    #if requested_blog in current_user.archives:
                     saved_blog = SavedBlog.query.filter_by(user_id=user_id, post_id=requested_blog.id).first()
                     if saved_blog:
                         return jsonify({"message": "Blog is already saved", "category": "info"}), 200
@@ -115,10 +98,7 @@ def blog_page():
                         db.session.add(new_saved_blog)
                         db.session.commit()
                         return jsonify({"message": "Blog saved successfully", "category": "success"}), 200
-                        #current_user.archives.append(requested_blog)
-                        #db.session.commit()
-                        #flash(f"The blog is has been saved successfully", category="success")
-                        #return redirect(url_for("save_page"))
+                
                 if comment_form.comment.data:
                     print("Comment form data:", comment_form.comment.data)
                     comment_to_post = Comment(text=comment_form.comment.data,
@@ -126,12 +106,8 @@ def blog_page():
                                               comments_on_post=requested_blog.id)
                     db.session.add(comment_to_post)
                     db.session.commit()
-                    # comment_id = comment_to_post.id
                     return jsonify({"message": "Comment added successfully", "category": "success", "post_id": post_id}), 201
 
-                    #flash(f"Thanks for your comment", category="success")
-                    #return redirect(url_for("blog_page", post_id=post_id))
-                #if reply_form.validate_on_submit():
                 if reply_form.reply.data:
                     comment_id = data.get("comment_id")
                     if comment_id:
@@ -139,10 +115,8 @@ def blog_page():
                                                      reply_comment=comment_id)
                         db.session.add(reply_to_post)
                         db.session.commit()
-                        # reply_id = reply_to_post.id
-                        return jsonify({"message": "reply added successfully", "category": "success", "post_id": post_id}), 201
-                        #flash(f"Thanks for your comment", category="success")
-                        #return redirect(url_for("blog_page", post_id=post_id))
+                        return jsonify({"message": "reply added successfully", "category": "success", "post_id": post_id}), 
+
                 if  replies_reply_form.reply_reply.data:
                     reply_id = data.get("reply_id")
                     if reply_id:
@@ -150,10 +124,8 @@ def blog_page():
                                                       replies_reply=reply_id)
                         db.session.add(replies_to_reply)
                         db.session.commit()
-                        # reply_reply_id = replies_to_reply.id
                         return jsonify({"message": "reply added successfully", "category": "success", "post_id": post_id}), 201
-                        #flash(f"Thanks for your comment", category="success")
-                        #return redirect(url_for("blog_page", post_id=post_id))
+
             if request.method == "GET":
                 # Display a specific blog with its comments and the replies associated with those comments
                 comment_with_replies = (db.session.query(Comment).filter(Comment.comments_on_post == post_id).options(
@@ -184,29 +156,22 @@ def blog_page():
                 print("Comments response:", requested_blog.owned_user)
                 return jsonify({"post": {"id": requested_blog.id, "post_image": requested_blog.post_image, "title": requested_blog.title, "content": requested_blog.content,
                                         "publication_date": requested_blog.publication_date, "owner": requested_blog.owner, "currentUser": user_id, "userName": requested_blog.owned_user.profile.username, "image": requested_blog.owned_user.profile.profile_picture}, "comments": comments_response}), 200
-                #return render_template("blog.html", post_id=requested_blog, comment_form=comment_form,
-                                        #posted_comments=comment_with_replies, reply_form=reply_form, replies_reply_form=replies_reply_form)
             else:
                 return jsonify({"message": "Blog not found", "category": "danger"}), 401
-                #flash(f"Blog not found", category="danger")
-                #return redirect(url_for("home_page"))
     for error_message in reply_form.errors.values():
         flash(f"There was an error : {error_message}", category="danger")
         return jsonify(errors=reply_form.errors), 400
     return redirect(url_for("home_page"))
 
 @app.route("/saved-items", methods=["GET"])
-#@login_required
 @jwt_required()
 @cross_origin()
 def save_page():
-    #items = current_user.archives
     current_user.id = get_jwt_identity()
     items = (db.session.query(Post).join(SavedBlog, SavedBlog.post_id == Post.id)
             .filter(SavedBlog.user_id == current_user.id).all())
     saved_posts = [item.to_dict() for item in items]
     return jsonify(saved_posts)
-    #return render_template("saved_items.html", items=items)
 
 @app.route("/modify-comment", methods=["POST", "GET"])
 @jwt_required()
@@ -255,8 +220,6 @@ def update_reply():
         # Check if the comment exists
         if replies is None:
             return jsonify({"message": "The comment was not found.", "category": "danger"}), 404
-            #flash("Comment not found. Please try again.", category="danger")
-            #return redirect(url_for("blog_page"))
         if current_user.id != replies.responder:
             return jsonify({"message": "You do not have permission to modify this blog.", "category": "danger"}), 401
     # Initialize form with existing comment data
@@ -269,17 +232,11 @@ def update_reply():
             replies.modification_date = datetime.now()
             db.session.commit()
             return jsonify({"message": "Your comment updated successfully.", "reply_to_modify": replies.reply_comment, "category": "success"}), 200
-            #flash("The comment has been updated successfully.", category='success')
-            #return redirect(url_for("blog_page", reply_to_modify=replies.reply_comment))
         else:
             return jsonify({"message": "Form validation failed", "errors": form.errors}), 400
-            #return render_template("edit_reply_to_comment.html", form=form, replies=replies)
     return jsonify({"replies": replies.to_dict()}), 200
-    # Render the template whether or not the comment was found
-    #return render_template("edit_reply_to_comment.html", form=form, replies=replies)
 
 @app.route("/modify", methods=["POST", "GET"])
-#@login_required
 @jwt_required()
 @cross_origin()
 def modify_post():
@@ -289,18 +246,13 @@ def modify_post():
         post = Post.query.filter_by(id=post_id).first()
         if not post:
             return jsonify({"message": "Blog not found", "category": "danger"}), 401
-            #flash(f"The blog not found", category="danger")
-            #return redirect(url_for("home_page"))
         if current_user.id != post.owner:
             return jsonify({"message": "You do not have permission to modify this blog.", "category": "danger"}), 401
-            #flash("You do not have permission to modify this blog.", category="danger")
-            #return redirect(url_for("blog_page"))
     # Initialize form with existing post data
     form = PostForm(obj=post)
 
     if request.method == "POST":
         if form.title.data:
-        #if form.validate_on_submit(): # Ensure the form is valid
         # Update specific blog if it exists
             if 'image' in request.files:
                 file = request.files['image']
@@ -317,17 +269,13 @@ def modify_post():
             post.modification_date = modification_date
             db.session.commit()
             return jsonify({"message": "The blog has been updated successfully.", "post_id": post.id, "category": "success"}), 200
-            #flash(f"The blog has been updated successfully.", category='success')
-            #return redirect(url_for("blog_page", post_id=post.id))
         else:
             # Render the form again with errors
             return jsonify({"message": "Form validation failed", "errors": form.errors}), 400
-            #return render_template("modify.html", form=form, post=post)
-    return jsonify({"post_image": post.post_image, "title": post.title, "content": post.content, "publication_date": post.publication_date}), 200
-    #return render_template("modify.html", form=form, post=post)
+    return jsonify({"post": post.to_dict()}), 200
+
 
 @app.route("/delete", methods=["POST", "GET"])
-#@login_required
 @jwt_required()  # This decorator verifies the JWT and provides the user's identity
 @cross_origin()
 def delete_page():
@@ -338,21 +286,16 @@ def delete_page():
         post_to_delete = Post.query.filter_by(id=post_id, owner=current_user.id).first()
         if not post_to_delete:
             return jsonify({"message": "The blog was not found."}), 404
-            #flash(f"The blog not found", category="danger")
         elif current_user.id != post_to_delete.owner:
             return jsonify({"message": "You do not have permission to delete this blog."}), 403
-            #flash(f"You do not heve permission to delete this blog", category="danger")
-            #return redirect(url_for("home_page"))
         else:
             db.session.delete(post_to_delete)
             db.session.commit()
             flash(f"The blog has been removed successfully", category="success")
             return jsonify({"message": "Blog deleted successfully."}), 200
     return jsonify({"message": "Post ID is required."}), 400
-    #return redirect(url_for("home_page"))
 
 @app.route("/delete-comment", methods=["POST", "GET"])
-#@login_required
 @jwt_required()  # This decorator verifies the JWT and provides the user's identity
 @cross_origin()
 def delete_comment():
@@ -362,17 +305,12 @@ def delete_comment():
         comment_to_delete = Comment.query.filter_by(id=comment_id, comment_owner=current_user.id).first()
         if not comment_to_delete:
             return jsonify({"message": "The comment is no longer available", "category": "danger"}), 404
-            #flash("The comment is no longer available.", category="danger")
-            #return redirect(url_for("home_page"))
         db.session.delete(comment_to_delete)
         db.session.commit()
         return jsonify({"message": "Comment deleted successfully.", "post_id": comment_to_delete.comments_on_post, "category": "success"}), 200
-        #flash(f"The comment has been removed successfully", category="success")
     return jsonify({"message": "Comment ID is missing", "post_id": None}), 400  # Return an error if no comment_id was provided
-    #return redirect(url_for("blog_page", post_id=comment_to_delete.comments_on_post))
 
 @app.route("/delete-reply-comment", methods=["POST", "GET"])
-#@login_required
 @jwt_required()  # This decorator verifies the JWT and provides the user's identity
 @cross_origin()
 def delete_reply():
@@ -381,21 +319,12 @@ def delete_reply():
         reply_to_delete = ReplyComment.query.filter_by(id=reply_id).first()
         if not reply_to_delete:
             return jsonify({"message": "The comment is no longer available", "category": "danger"}), 404
-            #flash("The comment is no longer available.", category="danger")
-            #return redirect(url_for("home_page"))
         db.session.delete(reply_to_delete)
         db.session.commit()
         return jsonify({"message": "Reply comment deleted successfully.", "post_id": reply_to_delete.reply_comment, "category": "success"}), 200
-        #flash(f"The comment has been removed successfully", category="success")
     return jsonify({"message": "Reply comment ID is missing", "post_id": None}), 400  # Return an error if no reply_id was provided
-    #return redirect(url_for("home_page"))
-
-#@app.route("/delete-reply-reply", methods=["POST", "GET"])
-#@login_required
-    #return redirect(url_for("blog_page", post_id=reply_to_delete.comments_on_post))
 
 @app.route("/profile", methods=["GET"])
-#@login_required
 @jwt_required()
 @cross_origin()
 def profile():
@@ -407,14 +336,10 @@ def profile():
         profile_to_display = Profile.query.filter_by(id=profile_id).first()
         if profile_to_display:
             profile = profile_to_display.to_dict()
-            return jsonify({"profile": profile, "category": "success"}), 200
-            #return render_template("profile.html", profile_id=profile_to_display)
+            return jsonify({"profile": profile, "currentUser": current_user.id, "category": "success"}), 200
         else:
             return jsonify({"message": "No profile with this name", "category": "danger"}), 200
-        #flash(f"No profile with this name", category="danger")
-        #return redirect(url_for("home_page"))
     return jsonify({"message": "No profile with this name", "category": "danger"}), 200
-    #return redirect(url_for("home_page"))
 
 @app.route("/my-profile", methods=["GET"])
 @jwt_required()
@@ -424,7 +349,6 @@ def my_profile():
     return jsonify({"profileId": current_user.id, "category": "success"}), 200
 
 @app.route("/update-profile", methods=["POST", "GET"])
-#@login_required
 @jwt_required()
 @cross_origin()
 def edit_profile():
@@ -469,30 +393,11 @@ def edit_profile():
                 db.session.commit()
                 profile = profile_to_update.to_dict()
                 return jsonify({"message": "The profile has been updated successfully.", "profile": profile, "category": "success"}), 200
-                #flash("Your profile was updated successfully", category="success")
-                #return redirect(url_for("profile"))
         # Handle validation errors
         for error_message in profile_form.errors.values():
             flash(f"There was an error updating your profile: {error_message}", category="danger")
             return jsonify(errors=profile_form.errors), 400
     return jsonify({"profile": profile_to_update.to_dict()}), 200
-    #return render_template("modify_profile.html", form=profile_form, profile_to_update=profile_to_update)
-
-# @app.route("/delete/<id>", methods=["POST"])
-# @login_required
-# def delete_page(id):
-    # Canceling blog
-    # post = Post.query.filter_by(id=id).first()
-    # if not post:
-        # flash(f"The blog not found", category="danger")
-    # elif current_user.id != post.owner:
-        # flash(f"You do not heve permission to delete this blog", category="danger")
-        # return redirect(url_for("home_page"))
-    # else:
-        # db.session.delete(post)
-        # db.session.commit()
-        # flash(f"The blog has been removed successfully", category="success")
-    # return redirect(url_for("home_page"))
 
 @app.route("/register", methods=["GET", "POST"])
 def register_page():
@@ -502,12 +407,6 @@ def register_page():
     if request.method == "POST":
         if form.email_address.data:
             print("Form data:", form.username.data, form.email_address.data, form.password1.data)
-            #user_to_create = User.query.filter_by(email=request.form.email_address).first()
-            # if user already exists render the message
-            #if user_to_create:
-                #flash(f"The email address provided is already in use", category="danger")
-                # render signup.html if user exists
-                #return render_template('register.html')
             user_to_create = User(username=form.username.data,
                                   email=form.email_address.data,
                                   password=form.password1.data)
@@ -519,34 +418,25 @@ def register_page():
             db.session.commit()
             login_user(user_to_create)
             access_token = create_access_token(identity=user_to_create.id)
-            #flash(f"Account created successfully! You are now logged in as {user_to_create.username}", category='success')
-            #return redirect(url_for("home_page"))
             return jsonify(message=f"Account created for {user_to_create.username}!"), 201
         if form.errors != {}:
             for error_message in form.errors.values():
                 flash(f"There is an error with registing: {error_message}", category="danger")
                 return jsonify(errors=form.errors), 400
     return jsonify({"id": user_to_create.id, "username": user_to_create.username})
-    #return render_template("register.html", form=form)
 
 @app.route("/login", methods=["POST", "GET"])
 def login_page():
     form = LoginForm()
     print("Form data:", form.username.data, form.password.data)
-    #if form.validate_on_submit():
     attempted_user = User.query.filter_by(username=form.username.data).first()
     if attempted_user and attempted_user.check_password_correction(attempted_password=form.password.data):
         login_user(attempted_user)
         access_token = create_access_token(identity=attempted_user.id)
 
         return jsonify({"message": "Success! You are logged in.", "access_token": access_token}), 200
-        #flash(f"Success! You are logged in as: {attempted_user.username}", category="success")
-        #return redirect(url_for("home_page"))
     else:
         return jsonify({"message": "Username or password are not correct! Please try again"}), 401
-        #flash('Username or password are not correct! Please try again', category='danger')
-    #return render_template("login.html", form=form)
-    #return jsonify({"id": attempted_user.id, "email": attempted_user.email})
 
 @app.route("/logout")
 def logout_page():

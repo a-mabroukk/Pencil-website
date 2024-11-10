@@ -13,7 +13,6 @@ import EditProfile from "./pages/Edit_profile";
 import UserProfile from "./pages/Profile";
 import UpdateComment from "./pages/Update_comment";
 import EditReply from "./pages/EditReply";
-import { UserProvider } from "./components/Context"; // Import the provider
 import Footer from "./components/Footer/Footer";
 
 function App() {
@@ -32,7 +31,6 @@ function App() {
   };
 
   return (
-    <UserProvider>
       <Router>
         <Routes>
           <Route path="/" element={<Layout />}>
@@ -50,7 +48,6 @@ function App() {
           <Route path="/edit-reply-on-comment/:replyId" element={<EditReply token={token} />} />
         </Routes>
       </Router>
-    </UserProvider>
   );
 }
 

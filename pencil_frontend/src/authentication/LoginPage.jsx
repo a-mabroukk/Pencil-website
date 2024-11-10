@@ -1,6 +1,5 @@
-import React, { useState, useContext } from "react";
+import React, { useState } from "react";
 import axios from "axios";
-import Context from '../components/Context'; // Adjust the path as necessary
 import { Link, useNavigate } from "react-router-dom";
 import logo from "../assets/images/logo.png";
 import Footer from "../components/Footer/Footer";
@@ -10,7 +9,6 @@ const LoginPage = () => {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [message, setMessage] = useState("");
-  const { setUserData } = useContext(Context); // Use the context
   const [token, setToken] = useState("");
   const navigate = useNavigate(); // Hook for navigation
 
@@ -33,10 +31,8 @@ const LoginPage = () => {
         console.log(response);
         //console.log(response.data);
         const token = response.data.access_token;
-        const userId = response.data.user_id;
         setToken(token);
         localStorage.setItem("authToken", token);
-        setUserData({ id: userId, token }); // Set user data in context
         navigate("/home");
       })
       .catch(function (error) {

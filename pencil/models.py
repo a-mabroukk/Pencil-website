@@ -2,7 +2,6 @@ from pencil import db
 from pencil import db, login_manager
 from pencil import bcrypt
 from flask_login import UserMixin
-#from flask_security import RoleMixin
 from datetime import datetime
 from pencil.base_model import BaseModel
 
@@ -113,76 +112,3 @@ class ChildReply(BaseModel):
     replies_reply = db.Column(db.Integer(), db.ForeignKey("replycomment.id"))
     def __repr__(self):
         return f"ChildReply {self.id}"
-
-
-
-#
-
-
-#class User(BaseModel, UserMixin):
-    #store = db.relationship("Store", back_populates="owner", uselist=False)
-    #roles = db.relationship('Role', secondary='user_role', backref="user")
-    #buyer = db.relationship("Sales", backref="book_buyers", lazy=True)
-
-# user_datastore = SQLAlchemySessionUserDatastore(db.session, User, Role)
-# security = Security(app, user_datastore)
-
-#class Role(BaseModel, RoleMixin):
-    #id = db.Column(db.Integer(), primary_key=True, nullable=False)
-    #name = db.Column(db.String(length=50), nullable=False)
-    #users = db.relationship("User", secondary="user_role", backref="role")
-    #def __repr__(self):
-        #return f"Role {self.id}"
-
-
-#class UserRole(BaseModel):
-   # __tablename__ = "user_role"
-    #id  = db.Column(db.Integer(), primary_key=True, nullable=False)
-    #user_id = db.Column(db.Integer(), db.ForeignKey("user.id"))
-    #role_id = db.Column(db.Integer(), db.ForeignKey("role.id"))
-
-
-#class Book(BaseModel):
-    #id = db.Column(db.Integer(), primary_key=True, nullable=False)
-    #picture = db.Column(db.String(), nullable=True)
-    #name = db.Column(db.String(length=50), nullable=False)
-    #author = db.Column(db.String(length=50), nullable=False)
-    #shopping = db.relationship("Store", secondary="market", backref="book")
-    #category = db.relationship("Category", back_populates="book_category", uselist=False)
-    #def __repr__(self):
-        #return f'Book {self.id}'
-
-#class Category(BaseModel):
-    #id = db.Column(db.Integer(), primary_key=True, nullable=False)
-    #category_name = db.Column(db.String(length=50), nullable=False)
-    #book_categories = db.Column(db.Integer(), db.ForeignKey("book.id"))
-    #book_category = db.relationship("Book", back_populates="category")
-    #@def __repr__(self):
-        #return f'Category {self.id}'
-
-#class Store(BaseModel):
-    #id = db.Column(db.Integer(), primary_key=True, nullable=False)
-    #picture = db.Column(db.String(), nullable=True)
-    #name = db.Column(db.String(length=50), nullable=False)
-    #owner_user = db.Column(db.Integer(), db.ForeignKey("user.id"))
-    #owner = db.relationship("User", back_populates="store")
-    #shop = db.relationship("Book", secondary="market", backref="store")
-    #def __repr__(self):
-        #return f'Store {self.id}'
-
-#class Sales(BaseModel):
-    #id = db.Column(db.Integer(), primary_key=True, nullable=False)
-    #store_sales = db.relationship("Market", backref="owned_sales", lazy=True)
-    #buyers = db.Column(db.Integer(), db.ForeignKey("user.id"))
-    #date_of_sale = db.Column(db.DateTime, default=datetime.utcnow())
-    #quantity_sold = db.Column(db.Integer(), nullable=False)
-    #def __repr__(self):
-        #return f"Sales {self.id}"
-
-#class Market(BaseModel):
-    #id = db.Column(db.Integer(), primary_key=True, nullable=False)
-    #quantity = db.Column(db.Integer(), nullable=False)
-    #price = db.Column(db.Integer(), nullable=False)
-    #store_id = db.Column(db.Integer(), db.ForeignKey("store.id"))
-    #book_id = db.Column(db.Integer(), db.ForeignKey("book.id"))
-    #order = db.Column(db.Integer(), db.ForeignKey("sales.id"))

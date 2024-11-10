@@ -1,8 +1,6 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { Link, useNavigate, useParams } from "react-router-dom";
-//import userImage from "../assets/images/kate-stone.jpg";
-//import arrow from "../assets/images/post/arrow.png";
 
 const UserProfile = () => {
   const navigate = useNavigate();
@@ -11,14 +9,14 @@ const UserProfile = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [token, setToken] = useState(null);
-  const [userId, setUserId] = useState(null); // Holds the logged-in user's ID
+  const [currentUser, setCurrentUser] = useState(null);
+  
 
   useEffect(() => {
     const savedToken = localStorage.getItem("authToken");
     if (savedToken) {
       setToken(savedToken);
-      const decodedToken = JSON.parse(atob(savedToken.split(".")[1])); // Decode JWT to get user ID
-      setUserId(decodedToken.user_id);
+      
     }
   }, []);
 
@@ -33,6 +31,7 @@ const UserProfile = () => {
         console.log(response.data);
         if (response.data.category === "success") {
           setProfile(response.data.profile);
+          setCurrentUser(response.data.currentUser);
         } else {
           setError(response.data.message || "Profile not found.");
         }
@@ -98,12 +97,12 @@ const UserProfile = () => {
                   <li className="list-inline-item">{profile.linkedin_links && (
                     <a href={profile.linkedin_links}><i className="ti-linkedin"></i></a>)}
                   </li>
-                  <li className="list-inline-item">
-                    {/* Only show edit button if logged-in user is the profile owner */}
-                    {userId === profile.users_profile && (
+                  {/* Only show edit button if logged-in user is the profile owner */}
+                  {profile.users_profile === currentUser && (
+                    <li className="list-inline-item">
                       <Link to={`/update-profile/${profileId}`} role="button" className="ti-pencil-alt pointer-crouser fs-4"></Link>
-                    )}
-                </li>
+                    </li>
+                  )}
                   <li className="list-inline-item">
                     <Link to={`/home`} role="button" className="back-button"></Link>
                   </li>
