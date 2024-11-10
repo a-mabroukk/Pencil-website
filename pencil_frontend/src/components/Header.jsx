@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import axios from "axios";
+import logo from "../assets/images/logo.png"
 // import Context from './Context'; // Uncomment if using context for user data
 
 export default function Header() {
@@ -44,7 +45,7 @@ export default function Header() {
       <div className="container">
         <nav className="navbar navbar-expand-lg navbar-white">
           <a className="navbar-brand order-1" href="index.html">
-            <img className="img-fluid" width="100px" src="images/logo.png"
+            <img className="img-fluid" width="58px"  height="25px" src={logo}
               alt=""/>
           </a>
           <div className="collapse navbar-collapse text-center order-lg-2 order-3" id="navigation">

@@ -100,9 +100,9 @@ const UserProfile = () => {
                   </li>
                   <li className="list-inline-item">
                     {/* Only show edit button if logged-in user is the profile owner */}
-                    {userId === profile.owner && (
-                    <Link to={`/update-profile/${profileId}`} role="button" className="ti-pencil-alt pointer-crouser fs-4"></Link>
-                  )}
+                    {userId === profile.users_profile && (
+                      <Link to={`/update-profile/${profileId}`} role="button" className="ti-pencil-alt pointer-crouser fs-4"></Link>
+                    )}
                 </li>
                   <li className="list-inline-item">
                     <Link to={`/home`} role="button" className="back-button"></Link>

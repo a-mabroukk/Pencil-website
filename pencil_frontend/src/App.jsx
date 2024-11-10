@@ -5,7 +5,6 @@ import Header from "./components/Header";
 import HomePage from "./pages/HomePage";
 import Login from "./authentication/LoginPage";
 import Register from "./authentication/Register";
-//import Logout from "./authentication/Logout";
 import PostForm from "./pages/Add_blog";
 import BlogPost from "./pages/Blog";
 import SavedItems from "./pages/SavedItems";
@@ -40,7 +39,6 @@ function App() {
             <Route path="/home" element={<HomePage token={token} />} />
             <Route path="/publish" element={<PostForm token={token} />} />
             <Route path="/profile/:profileId" element={<UserProfile token={token} />}/>
-
             <Route path="/blog/:postId" element={<BlogPost token={token} />} />
             <Route path="/saved-items" element={<SavedItems token={token} />} />
           </Route>

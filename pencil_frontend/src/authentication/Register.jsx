@@ -51,8 +51,8 @@ const Register = () => {
           style={{ color: "white" }}
         >
           <img
-            className="mb-4"
-            src="https://res.cloudinary.com/jimshapedcoding/image/upload/v1597332609/android-icon-192x192_ove2a7.png"
+            className="mb-4" width="200px"  height="200px"
+            src={logo}
             alt=""
           />
           <h1 className="h3 mb-3 font-weight-normal">
